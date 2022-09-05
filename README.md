@@ -10,4 +10,4 @@ ESM-based modules for the following classes:
 * [RelativeDateParser](./RelativeDateParser.mjs) - Provides mechanisms for parsing relative dates (e.g., tomorrow, -188y, +3w)
 * [TimeSpan](./TimeSpan.mjs) - Represents a time duration (inspired by .NET's structure of the same name)
 * [TokenList](./TokenList.mjs) - An implementation of [the DOMTokenList interface](https://dom.spec.whatwg.org/#interface-domtokenlist)
-* [BasicUtilities, NumberComparisonGranularity, DeepEqualityArgs] - Provides utility functions like `areTheSame`, `deepEqualsArrays`, `deepEquals`, `firstCapital`, `titleCase`, and `parseBoolean`.
+* [BasicUtilities, NumberComparisonGranularity, DeepEqualityArgs](./BasicUtilities.mjs) - Provides utility functions like `areTheSame`, `deepEqualsArrays`, `deepEquals`, `firstCapital`, `titleCase`, and `parseBoolean`.
