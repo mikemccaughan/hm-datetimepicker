@@ -11,3 +11,7 @@ ESM-based modules for the following classes:
 * [TimeSpan](./TimeSpan.mjs) - Represents a time duration (inspired by .NET's structure of the same name)
 * [TokenList](./TokenList.mjs) - An implementation of [the DOMTokenList interface](https://dom.spec.whatwg.org/#interface-domtokenlist)
 * [BasicUtilities, NumberComparisonGranularity, DeepEqualityArgs](./BasicUtilities.mjs) - Provides utility functions like `areTheSame`, `deepEqualsArrays`, `deepEquals`, `firstCapital`, `titleCase`, and `parseBoolean`.
+
+More ideas:
+* [Unicode Date Field Symbol Table](https://unicode.org/reports/tr35/tr35-dates.html#Date_Field_Symbol_Table) - maybe for use in format strings?
+* [ECMA402 Issue regarding formatting](https://github.com/tc39/ecma402/issues/703) - good hints for internationalization
