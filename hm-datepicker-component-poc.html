@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Date/Time Picker</title>
+    <script type="module" src="./HMDateTimePickerComponent.mjs"></script>
+    <script>
+      const showAllEvents = true;
+      function pickerErrored(err) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".error").classList.add("show");
+        document.querySelector(".error .error").innerHTML = err.detail.value;
+      }
+      function pickerOpened() {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".open").classList.add("show");
+      }
+      function pickerClosed() {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".close").classList.add("show");
+      }
+      function pickerDateSelected(e) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".date-select").classList.add("show");
+        document.querySelector(".date-select .date").innerHTML = e.detail.value;
+      }
+      function pickerPrevMonthClicked(e) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".prev-month").classList.add("show");
+        document.querySelector(".prev-month .month").innerHTML = e.detail.value;
+      }
+      function pickerNextMonthClicked(e) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".next-month").classList.add("show");
+        document.querySelector(".next-month .month").innerHTML = e.detail.value;
+      }
+      function pickerMonthSelected(e) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".month-select").classList.add("show");
+        document.querySelector(".month-select .month").innerHTML =
+          e.detail.value;
+      }
+      function pickerYearSelected(e) {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".year-select").classList.add("show");
+        document.querySelector(".year-select .year").innerHTML = e.detail.value;
+      }
+      function pickerCanceled() {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".cancel").classList.add("show");
+      }
+      function pickerSubmitted() {
+        if (!showAllEvents) {
+          document
+            .querySelectorAll(".status .show")
+            .forEach((el) => el.classList.remove("show"));
+        }
+        document.querySelector(".submit").classList.add("show");
+      }
+      window.addEventListener("load", () => {
+        const datePicker = document.getElementById("hm-dtp-03");
+        datePicker.addEventListener("hm-dtp-error", pickerErrored);
+        datePicker.addEventListener("hm-dtp-open", pickerOpened);
+        datePicker.addEventListener("hm-dtp-close", pickerClosed);
+        datePicker.addEventListener("hm-dtp-date-select", pickerDateSelected);
+        datePicker.addEventListener(
+          "hm-dtp-prev-month",
+          pickerPrevMonthClicked
+        );
+        datePicker.addEventListener(
+          "hm-dtp-next-month",
+          pickerNextMonthClicked
+        );
+        datePicker.addEventListener("hm-dtp-month-select", pickerMonthSelected);
+        datePicker.addEventListener("hm-dtp-year-select", pickerYearSelected);
+        datePicker.addEventListener("hm-dtp-cancel", pickerCanceled);
+        datePicker.addEventListener("hm-dtp-submit", pickerSubmitted);
+      });
+    </script>
+    <style>
+      .status {
+        border: 1px solid black;
+        padding: 1rem 1rem 1rem 2rem;
+        position: absolute;
+        right: 40px;
+        width: 400px;
+      }
+
+      .status li {
+        display: none;
+      }
+
+      .status li.show {
+        display: list-item;
+      }
+    </style>
+  </head>
+
+  <body>
+    <form>
+      <p>
+        <hm-date-time-picker
+          use-utc="true"
+          default-value=""
+          format="MM/dd/yyyy"
+          min-date="today"
+          max-date="+100y"
+          show-on="focus button"
+          title="Date/Time Picker (uses UTC, no default, MM/dd/yyyy, min-date today,
+        max-date +100y, show-on focus button)"
+          id="hm-dtp"
+        >
+        </hm-date-time-picker>
+      </p>
+      <p>
+        <hm-date-time-picker
+          use-utc="false"
+          default-value=""
+          format="iso"
+          min-date="-1d"
+          max-date="+1m"
+          show-on="button"
+          title="Date/Time Picker (does not use UTC (except that the format, ISO, renders the date in UTC), no default, ISO, min-date yesterday,
+        max-date +1m, show-on button)"
+          id="hm-dtp-02"
+        >
+        </hm-date-time-picker>
+      </p>
+      <p>
+        <hm-date-time-picker
+          use-utc="true"
+          default-value="2022-01-01"
+          format="d/M/y"
+          tt-date-format="EEEE, d MMMM, y"
+          tt-tabs-button-format="MMMM y"
+          tt-prev-button-format="MMMM y"
+          tt-next-button-format="MMMM y"
+          tabs-button-format="MMMM y"
+          prev-text="Prev"
+          next-text="Next"
+          show-manual-entry="false"
+          allow-manual-entry="false"
+          close-calendar-on-date-select="true"
+          time-zone="America/New_York"
+          min-date="yesterday"
+          max-date="+100y"
+          show-on="button"
+          use-year-and-month-tabs="true"
+          title="Date/Time Picker (does not use UTC, default 2022-01-01, d/M/y, time zone America/New_York, min-date yesterday,
+        max-date +100y, show-on button, uses year and month tabs)"
+          id="hm-dtp-03"
+        >
+        </hm-date-time-picker>
+        <ul class="status">
+          <li class="open">Open</li>
+          <li class="close">Closed</li>
+          <li class="date-select">Date Selected: <span class="date"></span></li>
+          <li class="time-select">Time Selected: <span class="time"></span></li>
+          <li class="month-select">
+            Month Selected: <span class="month"></span>
+          </li>
+          <li class="year-select">Year Selected: <span class="year"></span></li>
+          <li class="prev-month">Month Selected: <span class="month"></span></li>
+          <li class="next-month">Month Selected: <span class="month"></span></li>
+          <li class="submit">Submit (Ok)</li>
+          <li class="cancel">Cancel</li>
+          <li class="error">Error: <span class="error"></span></li>
+        </ul>
+      </p>
+      <p>
+        <hm-date-time-picker
+          use-utc="true"
+          show-manual-entry="false"
+          lang="ja-JP-u-ca-japanese"
+          allow-manual-entry="false"
+          close-calendar-on-date-select="true"
+          time-zone="Asia/Tokyo"
+          min-date="-100y"
+          max-date="+100y"
+          show-on="button"
+          use-year-and-month-tabs="true"
+          title="Date/Time Picker (uses UTC, no default, no format, time zone Asia/Tokyo, min-date -100y,
+      max-date +100y, show-on button, uses year and month tabs)"
+          id="hm-dtp-04"
+        >
+        </hm-date-time-picker>
+      </p>
+    </form>
+  </body>
+</html>
