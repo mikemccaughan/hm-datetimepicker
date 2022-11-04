@@ -82,6 +82,9 @@ function runTests() {
     Assert.isEqual(TimeSpan.Zero.asDate.valueOf(), new Date(0).valueOf(), 'asDate', 'The conversion to date was incorrect');
     Assert.isEqual(TimeSpan.fromDays(2).totalDays, 2, 'totalDays', 'Between fromDays and totalDays, something went wrong');
     Assert.isEqual(TimeSpan.fromHours(2).totalHours, 2, 'totalHours', 'Between fromHours and totalHours, something went wrong');
+    const dateForParsing = new Date(0, 0, 1, 1, 1, 1, 1);
+    const stringForParsing = dateForParsing.toISOString().slice(0, -1);
+    Assert.isE
     console.log(`All tests passed. Exiting.`);
   } catch (e) {
     console.error(e);

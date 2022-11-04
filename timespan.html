@@ -1,72 +1,95 @@
 <!DOCTYPE html>
 <html lang="en-US">
-  <head>
-    <title>Heretic-Monkey's TimeSpan Class</title>
-    <link rel="stylesheet" href="index.css" />
-    <script type="module" src="./TimeSpan.mjs"></script>
-    <script type="module" src="./HMDateTimePickerComponent.mjs"></script>
-    <style>
-      em { font-style: normal; font-family: monospace; font-weight: bold; font-size: 18px; color: darkred; }
-    </style>
-  </head>
-  <body>
-    <h1>TimeSpan Demo</h1>
-    <p>
-      Used by the <a href="hm-datepicker-component-poc.html">Date Picker Web Component POC</a>
-    </p>
-    <form>
-      <div class="form-group">
-        <hm-date-time-picker
-          use-utc="true"
-          default-value=""
-          format="MM/dd/yyyy"
-          min-date="today"
-          max-date="+100y"
-          show-on="focus button"
-          title="From:"
-          id="hm-dtp-from"
-        >
-        </hm-date-time-picker>
-      </div>
-      <div class="form-group">
-        <hm-date-time-picker
-          use-utc="true"
-          default-value=""
-          format="MM/dd/yyyy"
-          min-date="today"
-          max-date="+100y"
-          show-on="focus button"
-          title="To:"
-          id="hm-dtp-to"
-        >
-        </hm-date-time-picker>
-      </div>
-      <output id="timespanDiff">
-          <ul></ul>
-      </output>
-    </form>
-    <script async type="module">
-        import TimeSpan from './TimeSpan';
-        let startDate;
-        let endDate;
-        function updateTimeSpan() {
-            if (startDate instanceof Date && endDate instanceof Date) {
-                const ts = TimeSpan.fromSubtractingTwoDates(startDate, endDate);
-                const latest = document.createElement('li');
-                const seconds = ts.seconds + (ts.milliseconds * TimeSpan.msPerMillisecond / TimeSpan.msPerSecond); // Seconds + fractional seconds
-                const durationHtml = `P<em>${ts.days}</em>DT<em>${ts.hours}</em>H<em>${ts.minutes}</em>M<em>${seconds}</em>S`;
-                latest.innerHTML = durationHtml;
-                document.getElementById('timespanDiff').querySelector('ul').prepend(latest);
-            }
+
+<head>
+  <title>Heretic-Monkey's TimeSpan Class</title>
+  <link rel="stylesheet" href="index.css" />
+  <script type="module" src="./TimeSpan.mjs"></script>
+  <script type="module" src="./HMDateTimePickerComponent.mjs"></script>
+  <style>
+    :root {
+      --hm-date-time-picker-right: auto;
+      --hm-date-time-picker-left: 0;
+    }
+    em {
+      font-style: normal;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 18px;
+      color: darkred;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>TimeSpan Demo</h1>
+  <p>
+    Used by the <a href="hm-datepicker-component-poc.html">Date Picker Web Component POC</a>
+  </p>
+  <form>
+    <div class="form-group">
+      <hm-date-time-picker use-utc="true" default-value="" format="MM/dd/yyyy" min-date="today" max-date="+100y"
+        show-on="focus button" title="From:" id="hm-dtp-from">
+      </hm-date-time-picker>
+    </div>
+    <div class="form-group">
+      <hm-date-time-picker use-utc="true" default-value="" format="MM/dd/yyyy" min-date="today" max-date="+100y"
+        show-on="focus button" title="To:" id="hm-dtp-to">
+      </hm-date-time-picker>
+    </div>
+    <output id="timespanDiff">
+      <ul></ul>
+    </output>
+  </form>
+  <script async type="module">
+    import TimeSpan from './TimeSpan.mjs';
+    import { HMDateTimePicker } from './HMDateTimePickerComponent.mjs';
+    class TimeSpanTest {
+      #startDate = undefined;
+      #endDate = undefined;
+      #timespanDiff = undefined;
+      constructor(fromDtp, toDtp, logOutput) {
+        if (!fromDtp instanceof HMDateTimePicker) {
+          throw new Error("Constructor must be called with instance of an HMDateTimePicker component for the From date");
         }
-        document.getElementById('hm-dtp-from').addEventListener('hm-dtp-submit', (e) => {
-            startDate = e.detail.value;
-            updateTimeSpan();
+        if (!toDtp instanceof HMDateTimePicker) {
+          throw new Error("Constructor must be called with instance of an HMDateTimePicker component for the To date");
+        }
+        if (!logOutput instanceof HTMLOutputElement) {
+          throw new Error("Constructor must be called with instance of an HTMLOutputElement for the list of selected timespans");
+        }
+        this.#timespanDiff = logOutput;
+        fromDtp.addEventListener('hm-dtp-submit', (e) => {
+          this.#startDate = e.detail.value;
+          this.update();1
         });
-        document.getElementById('hm-dtp-to').addEventListener('hm-dtp-submit', (e) => {
-            endDate = e.detail.value;
-            updateTimeSpan();
+        toDtp.addEventListener('hm-dtp-submit', (e) => {
+          this.#endDate = e.detail.value;
+          this.update();
         });
-    </script>
-    </body>
+      }
+      update() {
+        if (this.#startDate instanceof Date && this.#endDate instanceof Date) {
+          console.log(`Getting difference between ${this.#startDate.toISOString()} and ${this.#endDate.toISOString()}`);
+          console.log(` - which is ${this.#endDate.valueOf() - this.#startDate.valueOf()} ms`);
+          console.log(` - which is ~${(this.#endDate.valueOf() - this.#startDate.valueOf())/TimeSpan.msPerDay} days`);
+          const ts = TimeSpan.fromSubtractingTwoDates(this.#startDate, this.#endDate);
+          const latest = document.createElement('li');
+          const seconds = ts.seconds + (ts.milliseconds * TimeSpan.msPerMillisecond / TimeSpan.msPerSecond); // Seconds + fractional seconds
+          const durationHtml = `P<em>${ts.days}</em>DT<em>${ts.hours}</em>H<em>${ts.minutes}</em>M<em>${seconds}</em>S`;
+          latest.innerHTML = durationHtml;
+          this.#timespanDiff.querySelector('ul').prepend(latest);
+        }
+      }
+    }
+    window.addEventListener('load', () => {
+      const test = new TimeSpanTest(
+        document.getElementById('hm-dtp-from'),
+        document.getElementById('hm-dtp-to'),
+        document.getElementById('timespanDiff'),
+      );
+    });
+  </script>
+</body>
+
 </html>

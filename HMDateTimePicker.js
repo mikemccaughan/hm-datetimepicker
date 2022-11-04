@@ -1,7 +1,10 @@
-class HMDateTimePicker {
+import DateHelper from "./DateHelper.mjs";
+
+export class HMDateTimePicker {
   constructor({
     inputSelector,
     pickerSelector,
+    pickerTabsSelector,
     useUTC,
     defaultDate,
     format,
@@ -13,6 +16,7 @@ class HMDateTimePicker {
   }) {
     console.time('constructor');
     this.inputSelector = inputSelector;
+    this.pickerTabsSelector = pickerTabsSelector;
     this.pickerSelector = pickerSelector;
     this.useUTC = useUTC;
     this.useYearAndMonthTabs = useYearAndMonthTabs || !useYearAndMonthSelects;
@@ -89,6 +93,7 @@ class HMDateTimePicker {
 
     this.inputElement = document.querySelector(this.inputSelector);
     this.pickerElement = document.querySelector(this.pickerSelector);
+    this.pickerTabsElement = document.querySelector(this.pickerTabsSelector);
     if (
       this.inputElement.id &&
       this.inputElement.id.length &&
@@ -101,17 +106,51 @@ class HMDateTimePicker {
         lastId++;
       }
       this.pickerElement.id = newId;
+      this.pickerTabsElement.id = `${newId}-tabs`;
     }
     this.pickerElement.classList.toggle('use-tabs', this.useYearAndMonthTabs);
     this.pickerElement.classList.toggle(
       'use-selects',
       this.useYearAndMonthSelects
     );
+    const timeZones = Intl.supportedValuesOf('timeZone');
+    const probableTimeZone = DateHelper.getProbableClientTimeZoneName([]);
+    const possibleTimeZones = DateHelper.getPossibleClientTimeZoneNames();
+    this.timeZoneElement = this.pickerElement.querySelector('.date-time-picker-time-zone');
+    timeZones.sort((a,b) => a === 'UTC' && b !== 'UTC' 
+      ? Number.MIN_SAFE_INTEGER 
+      : a === probableTimeZone && b !== probableTimeZone
+      ? Number.MIN_SAFE_INTEGER + 1 
+      : a !== probableTimeZone && b === probableTimeZone
+      ? Number.MAX_SAFE_INTEGER - 1
+      : a === probableTimeZone && b === probableTimeZone
+      ? 0
+      : possibleTimeZones.includes(a) && possibleTimeZones.includes(b)
+      ? 0
+      : possibleTimeZones.includes(a) && !possibleTimeZones.includes(b)
+      ? Number.MIN_SAFE_INTEGER + 2 
+      : !possibleTimeZones.includes(a) && possibleTimeZones.includes(b)
+      ? Number.MAX_SAFE_INTEGER - 2
+      : a.localeCompare(b));
+    for (const timeZone of timeZones) {
+      const tzOption = document.createElement('option');
+      tzOption.value = timeZone;
+      tzOption.text = timeZone;
+      if (timeZone === probableTimeZone) {
+        tzOption.dataset.probable = true;
+      }
+      if (possibleTimeZones.includes(timeZone)) {
+        tzOption.dataset.possible = true;
+      }
+      this.timeZoneElement.appendChild(tzOption);
+    }
+    this.timeNowElement = this.pickerElement.querySelector('.date-time-picker-time-input-now');
     this.monthYearSelector = this.pickerElement.querySelector(
       '.month-year-selector'
     );
     this.datePickerElement = this.pickerElement.querySelector('.date-picker');
     this.pickerInputElement = this.pickerElement.querySelector('.date-utc');
+    this.pickerTimeElement = this.pickerElement.querySelector('.time-utc');
     this.monthSelect = this.pickerElement.querySelector('.month-utc');
     this.yearSelect = this.pickerElement.querySelector('.year-utc');
     this.prevMonth = this.pickerElement.querySelector('.month-prev-utc');
@@ -138,18 +177,7 @@ class HMDateTimePicker {
     if (typeof value !== 'object' || Number.isNaN(value.valueOf())) {
       return value;
     }
-    const returnValue =
-      this.useUTC && !value.wasParsed
-        ? new Date(
-            value.getUTCFullYear(),
-            value.getUTCMonth(),
-            value.getUTCDate(),
-            value.getUTCHours(),
-            value.getUTCMinutes(),
-            value.getUTCSeconds(),
-            value.getUTCMilliseconds()
-          )
-        : new Date(value.valueOf());
+    const returnValue = new Date(value.valueOf());
     returnValue.wasParsed = true;
     return returnValue;
   }
@@ -178,7 +206,7 @@ class HMDateTimePicker {
       if (value.trim().length === 0) {
         returnValue = this.parseDate(defaultValue);
       } else {
-        const parsed = new Date(value);
+        const parsed = DateHelper.parseDate(value.trim(), { locale: [], format: ['yyyy-MM-dd'], timeZone: this.useUTC ? 'UTC' : this.timeZoneElement.value })
         returnValue = this.getDate(parsed);
       }
     }
@@ -191,11 +219,33 @@ class HMDateTimePicker {
     this.pickerInputElement.value = formatted;
     const myFormatted = this.monthYearFormatter.format(val);
     this.monthYearSelector.querySelector('.selected').textContent = myFormatted;
+    return formatted;
+  }
+  formatTime() {
+    const val = this.value;
+    const formattedTime = this.timeFormatter.format(val);
+    const tz = formattedTime.slice(formattedTime.lastIndexOf(' '));
+    this.pickerElement.querySelector('.date-time-picker-time-zone').value = this.timeFormatter.resolvedOptions().timeZone;
+    this.pickerElement.querySelector('.date-time-picker-time-zone-name').textContent = tz.trim();
+    this.pickerTimeElement.value = formattedTime.replace(tz, '');
+    return formattedTime;
+  }
+  setTimeZone() {
+    const timeZone = this.pickerElement.querySelector('.date-time-picker-time-zone').value;
+    const timeFormatterOptions = this.timeFormatter.resolvedOptions();
+    timeFormatterOptions.timeZone = timeZone;
+    this.timeFormatter = new Intl.DateTimeFormat(undefined, timeFormatterOptions);
+    const dateFormatterOptions = this.dateFormatter.resolvedOptions();
+    dateFormatterOptions.timeZone = timeZone;
+    this.dateFormatter = new Intl.DateTimeFormat(undefined, dateFormatterOptions);
+    this.useUTC = timeZone === 'UTC';
+    this.formatTime();
   }
   setSelectedValue() {
     const val = this.value;
     const formatted = this.dateFormatter.format(val);
-    this.inputElement.value = formatted;
+    const formattedTime = this.formatTime();
+    this.inputElement.value = `${formatted} ${formattedTime}`;
   }
   populateMonths() {
     console.time('populateMonths');
@@ -338,29 +388,13 @@ class HMDateTimePicker {
     );
   }
   isSameDay(a, b) {
-    return (
-      a.getFullYear() === b.getFullYear() &&
-      a.getMonth() === b.getMonth() &&
-      a.getDate() === b.getDate()
-    );
+    return DateHelper.isSameDay(a, b);
   }
   isBeforeDay(a, b) {
-    return (
-      a.getFullYear() < b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && a.getMonth() < b.getMonth()) ||
-      (a.getFullYear() === b.getFullYear() &&
-        a.getMonth() === b.getMonth() &&
-        a.getDate() < b.getDate())
-    );
+    return DateHelper.isBeforeDay(a, b);
   }
   isAfterDay(a, b) {
-    return (
-      a.getFullYear() > b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && a.getMonth() > b.getMonth()) ||
-      (a.getFullYear() === b.getFullYear() &&
-        a.getMonth() === b.getMonth() &&
-        a.getDate() > b.getDate())
-    );
+    return DateHelper.isAfterDay(a, b);
   }
   dateIsDisabled(date) {
     return (
@@ -405,6 +439,7 @@ class HMDateTimePicker {
       );
       const button = this.dateButtons[i];
       button.setAttribute('aria-label', this.dateFormatter.format(buttonDate));
+      button.setAttribute('title', this.dateFormatter.format(buttonDate));
       this.clearDataset(button);
       button.dataset.date = this.isoFormatter.format(buttonDate);
       button.dataset.dateOther = buttonDate.getMonth() !== dateDate.getMonth();
@@ -415,7 +450,7 @@ class HMDateTimePicker {
     }
   }
   calculateAllDatesInMonth(monthDate) {
-    console.time(`calculateAllDatesInMonth${monthDate}`);
+    console.time(`calculateAllDatesInMonth(${monthDate.toISOString()})`);
     const allDates = [];
     const first = this.getFirstOfMonth(monthDate);
     const last = this.getLastOfMonth(monthDate);
@@ -424,11 +459,11 @@ class HMDateTimePicker {
       allDates.push(new Date(temp.valueOf()));
       temp.setDate(temp.getDate() + 1);
     }
-    console.timeEnd(`calculateAllDatesInMonth${monthDate}`);
+    console.timeEnd(`calculateAllDatesInMonth(${monthDate.toISOString()})`);
     return allDates;
   }
   calculateAllDatesInYear(yearDate) {
-    console.time(`calculateAllDatesInYear${yearDate}`);
+    console.time(`calculateAllDatesInYear(${yearDate.toISOString()})`);
     const allDates = [];
     let temp = new Date(yearDate.valueOf());
     temp.setMonth(0);
@@ -440,7 +475,7 @@ class HMDateTimePicker {
       allDates.push(new Date(temp.valueOf()));
       temp.setDate(temp.getDate() + 1);
     }
-    console.timeEnd(`calculateAllDatesInYear${yearDate}`);
+    console.timeEnd(`calculateAllDatesInYear(${yearDate.toISOString()})`);
     return allDates;
   }
   allDatesAreDisabled(dates) {
@@ -500,6 +535,11 @@ class HMDateTimePicker {
       this.datePickerElement.classList.add('calendar-entry');
       this.datePickerElement.classList.remove('month-entry');
     }
+  }
+  timeSelected(e) {
+    this.value = this.parseTime(e.target.dataset.time);
+    this.formatTime();
+    this.repopulate();
   }
   prevClicked(e) {
     // Make sure that keeping the same selected day (e.g., 31st),
@@ -594,6 +634,25 @@ class HMDateTimePicker {
         this.dateSelected(e);
       }
     });
+    this.pickerTabsElement.addEventListener('click', (e) => {
+      if (e.target.matches('button')) {
+        if (e.target.classList.contains('date-picker-tab')) {
+          this.pickerElement.classList.remove('time-picker');
+          this.pickerElement.classList.add('date-picker');
+        }
+        if (e.target.classList.contains('time-picker-tab')) {
+          this.pickerElement.classList.remove('date-picker');
+          this.pickerElement.classList.add('time-picker');
+        }
+      }
+    })
+    this.timeZoneElement.addEventListener('change', () => {
+      this.setTimeZone(this.timeZoneElement.value);
+    });
+    this.timeNowElement.addEventListener('click', (e) => {
+      this.value = this.getNow();
+      this.setSelectedValue();
+    })
     this.prevMonth.addEventListener('click', this.prevClicked.bind(this));
     this.nextMonth.addEventListener('click', this.nextClicked.bind(this));
     this.monthSelect.addEventListener('change', this.monthSelected.bind(this));

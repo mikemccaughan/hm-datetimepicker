@@ -9,11 +9,35 @@
   left: 1rem;
   top: 2rem;
   width: 18rem;
+  height: 255px;
   border: 1px solid #e0e0e0;
   padding: 0.5rem 1rem;
 }
-.date-time-picker.date-picker .time-picker {
-  display: none;
+.date-time-picker .date-time-picker-tabs {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.date-time-picker .date-time-picker-tabs button {
+  flex: 1 0 50%;
+}
+.date-time-picker.date-picker .date-picker-tab,
+.date-time-picker.time-picker .time-picker-tab {
+  border: 1px solid black;
+  background-color: white;
+}
+.date-time-picker.date-picker .time-picker,
+.date-time-picker.time-picker .date-picker {
+  position: absolute;
+  left: -20rem;
+}
+.date-time-picker.date-picker .date-picker,
+.date-time-picker.time-picker .time-picker {
+  flex: 1 0 auto;
+  display: flex;
+  flex-flow: column nowrap;
 }
 
 .calendar-entry,
@@ -25,6 +49,10 @@
 .date-picker.calendar-entry,
 .date-picker.manual-entry {
   margin: 0;
+}
+
+.manual-entry label {
+  display: block;
 }
 
 .date-picker.calendar-entry .calendar-entry,
@@ -214,8 +242,21 @@ button.month-entry-month[data-is-selected='true'][data-date-other='false']:disab
   background-color: lightpink;
   color: #000000;
 }
-.date-time-picker input {
+.date-time-picker :is(input, select, textarea) {
   min-height: 32px;
+}
+.date-time-picker.time-picker :is(input, select, textarea) + button {
+  min-height: 38px;
+}
+.date-time-picker :is(input, select, textarea):invalid {
+  border-color: red;
+}
+
+[data-possible="true"] {
+  background-color: lightyellow;
+}
+[data-possible="true"][data-probable="true"] {
+  background-color: lightgreen;
 }
 
 button.picker-footer {
@@ -225,7 +266,11 @@ button.picker-footer {
 }
 
 div.picker-footer {
-  text-align: right;
+  display: flex;
+  flex-flow: row nowrap;
+  align-self: flex-end;
+  order: 4;
+  gap: 1rem;
 }
 
 .picker-footer-cancel {
