@@ -19,11 +19,17 @@ export class DateComparisonGranularity {
   static Default = "ms";
   static Custom = "?";
 }
+/**
+ * Provides a structured collection of DatePart objects so that adding, removing, and moving
+ * parts within the collection is easier.
+ */
 class DatePartCollection extends Set {
-  /**
-   * {DatePart[]} The list of parts that make up this collection.
-   */
   #parts = [];
+  /**
+   * 
+   * @param {DatePart[]|undefined} parts An array of DatePart objects to add to this 
+   * collection, or undefined to create an empty collection.
+   */
   constructor(parts) {
     if (parts && parts.length) {
       this.#parts = Array.from(parts)
@@ -32,17 +38,19 @@ class DatePartCollection extends Set {
           if (!"index" in part) {
             if (idx === 0) {
               newPart.index = 0;
-            } else {
-              newPart.index = arr.slice(0, idx - 1).reduce((agg, cur, i) => agg + cur.index + cur.length, 1);
-            }            
-          }
-          if ("type" in part && part.type != null) {
-            if (!part.type in part && "value" in part && part.value != null) {
-              newPart = {
-                ...newPart,
-                ...DatePart.buildFromFormattedPart(part)
-              };
+            } else if (arr.slice(0, idx - 1).every((p) => p.index != null && p.length != null)) {
+              newPart.index = arr
+                .slice(0, idx - 1)
+                .reduce((agg, cur) => agg + cur.index + cur.length, 1);
             }
+          }
+          if ("type" in part && part.type != null && // part.type is filled in
+              !part.type in part && // There is no property named for the type (e.g., part.month where part.type === 'month')
+              "value" in part && part.value != null) { // part.value is filled in
+            newPart = {
+              ...newPart,
+              ...DatePart.buildFromFormattedPart(part),
+            };
           }
           return newPart;
         })
@@ -62,13 +70,17 @@ class DatePartCollection extends Set {
           part.length = null;
         }
       }
-      const partsAfter = this.#parts.filter((p) => p.index > part.index).sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+      const partsAfter = this.#parts
+        .filter((p) => p.index > part.index)
+        .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       const partAt = this.#parts.findIndex((p) => p.index === part.index);
       if (partAt > -1 && "length" in part && part.length != null) {
         this.#parts.at(partAt).index = part.end;
         partsAfter.forEach((p) => (p.index += part.length));
       } else if ("length" in part && part.length != null) {
-        const idx = this.#parts.findIndex((p) => p.index === partsAfter.at(0).index)
+        const idx = this.#parts.findIndex(
+          (p) => p.index === partsAfter.at(0).index
+        );
         partsAfter.forEach((p) => (p.index += part.length));
       }
     } else {
@@ -138,7 +150,7 @@ class DatePart {
    * @param {DatePart} part The part of the date to guess more infomration about
    * @returns {DatePart} A more fleshed out object with more formatting information
    */
-   static buildFromFormattedPart(part) {
+  static buildFromFormattedPart(part) {
     const returnValue = new DatePart({
       ...part,
       length: part.value.length,
@@ -351,7 +363,7 @@ class DatePart {
   minute = undefined;
   second = undefined;
   fractionalSecondDigits = undefined;
-  /**4
+  /**
    * Defines how the time zone will be formatted. Note that not all values are supported on all platforms.
    */
   timeZoneName = undefined;
@@ -528,7 +540,7 @@ export default class DateHelper {
     /**
      * Formats the era in a "short" format (known as "Abbreviated" in Unicode TR35); e.g. AD
      */
-    GG: {
+    GGG: {
       era: "short",
       name: "era-short",
       type: "era",
@@ -2388,7 +2400,7 @@ export default class DateHelper {
               part.field = "GGGGG";
               break;
             case "short":
-              part.field = "GG";
+              part.field = "GGG";
               break;
             case "long":
               part.field = "GGGG";
@@ -3241,8 +3253,9 @@ export default class DateHelper {
       []
     );
     const literalsPass4 = literalsPass3.filter((f) => f !== undefined);
-    const literalsPass5 = literalsPass4.map(([index, value]) => ({
+    const literalsPass5 = literalsPass4.map(([index, value], idx) => ({
       type: "literal",
+      name: `literal${idx}`,
       index,
       value,
     }));
@@ -3519,7 +3532,24 @@ export default class DateHelper {
       .replace(/[^\p{L}\p{N}]/gu, "");
     return partValue;
   }
+  /**
+   * Gets the Gregorian year that corresponds to the given era and year in the Japanese calendar.
+   * @param {string} era The era, formatted to its "narrow" format (if formatted otherwise, 
+   * will be automatically converted)
+   * @param {Date} date The date, with the year value set to the Japanese year within the 
+   * era (e.g., 3 with an era of R means the 3rd year of the Reiwa era, equivalient to 2022)
+   * @returns {string|number|undefined} The Gregorian year equivalent to the specified era and year.
+   * @todo Currently the only valid eras this works for are from the Meiji (~1869) through 
+   * the current (2022) Reiwa. Historical eras would require more detailed references than I
+   * could find in my initial search of the internet. This will also need to be updated should
+   * Japan get a new emperor or otherwise change their calendar implementation.
+   */
   static #getGregorianYearFromJapaneseEraAndDate(era, date) {
+    if (!era || era.length === 0) {
+      const error = `An attempt was made to get era information, but the era was null, undefined, or blank.`;
+      Logger.error(error);
+      throw new Error(error);
+    }
     const yearValue = date.getFullYear();
     const monthValue = date.getMonth() + 1;
     const dayValue = date.getDate();
@@ -3567,18 +3597,25 @@ export default class DateHelper {
         }
       }
     } else {
-      const eraToLetter = new Map([
-        ["令和", "R"],
-        ["平成", "H"],
-        ["昭和", "S"],
-        ["大正", "M"],
-      ]);
       return this.#getGregorianYearFromJapaneseEraAndDate(
-        eraToLetter.get(era),
+        this.#japaneseShortEraToNarrowEra.get(era),
         date
       );
     }
   }
+  /**
+   * A map between the short format of a Japanese era and its narrow equivalent.
+   */
+  static #japaneseShortEraToNarrowEra = new Map([
+    ["令和", "R"],
+    ["平成", "H"],
+    ["昭和", "S"],
+    ["大正", "M"],
+  ]);
+  /**
+   * A map between the format symbol used and the expected number of characters used when
+   * the value is formatted.
+   */
   static #japaneseEraInfo = {
     GGGGG: {
       length: 1,
@@ -3590,10 +3627,17 @@ export default class DateHelper {
       length: 2,
     },
   };
+  /**
+   * Gets the Gregorian year equivalent of the given era and year in the Japanese calendar.
+   * @param {string|undefined} value The value from which to get the year.
+   * @param {DatePartCollection} parts The parts of the date currently getting parsed.
+   * @param {DateHelperOptions} options Hash of options used when parsing the date.
+   * @returns {string|number|undefined} The Gregorian year
+   */
   static #getGregorianYearFromJapaneseEraAndYear(value, parts, options) {
     const eraPart = parts.find((part) => part.type === "era");
     const eraLength = eraPart.length;
-    eraPart.length = DateHelper.#japaneseEraInfo[eraPart.field].length;
+    eraPart.length = DateHelper.#japaneseEraInfo[eraPart.field]?.length ?? 0;
     const yearPart = parts.find((part) => part.type === "year");
     const eraLengthDiff = eraLength - eraPart.length;
     if (eraLengthDiff !== 0) {
@@ -3646,9 +3690,15 @@ export default class DateHelper {
     return this.#getGregorianYearFromJapaneseEraAndDate(era, date);
   }
 
+  /**
+   * Validates that the collection of parts are in order and are valid (i.e., each index 
+   * starts where the last one ended, and there are no gaps)
+   * @param {DatePartCollection} parts The parts to validate
+   */
   static #validatePartsAndSetEnds(parts) {
     let lastIndex = 0;
     let lastLength = 0;
+    let lastEnd = 0;
     for (let i = 0, z = parts.length; i < z; i++) {
       const part = parts[i];
       if (i === 0) {
@@ -3660,13 +3710,24 @@ export default class DateHelper {
         }
         lastLength = part.length;
         part.end ??= part.index + part.length;
+        lastEnd = part.end;
       } else {
-        if (part.index !== lastIndex + lastLength) {
+        if (part.index !== lastEnd) {
           Logger.warn(
-            `The part ${part.name} has an index, ${part.index}, that is not equal to the previous part's index ${lastIndex} and length ${lastLength}`
+            `The part ${part.name} has an index, ${part.index}, that is not equal to the previous part's ending index ${lastEnd}; resetting to that value`
           );
+          part.index = lastEnd;
+        }
+        if ((part.length ?? 0) === 0) {
+          Logger.warn(
+            `The part ${part.name} has an invalid length of ${
+              part.length
+            }; resetting to ${part.value?.length ?? 1}`
+          );
+          part.length = part.value?.length ?? 1; // default length to 1
         }
         part.end ??= part.index + part.length;
+        lastEnd = part.end;
       }
     }
   }
@@ -3674,22 +3735,18 @@ export default class DateHelper {
   /**
    * Uses parts pulled from a format to create a Date from a string value, using options.
    * @param {string} value The original string getting parsed
-   * @param {any[]} parts An array of objects representing the parts of a Date that have been parsed from value
-   * @param {number} parts[0].index The index of the date part in the format (and, theoretically, value)
-   * @param {number} parts[0].length The length of the date part in the format (and, theoretically, value)
-   * @param {any} parts[0]['?'] Various part-specific information (e.g., month: '2-digit' tells us that the
-   * month part will be a two-digit number)
-   * @param {object} options Optional hash of overrides for the properties set on the object.
-   * @param {string} options.locale The locale in which to format the date (must be a valid BCP 47 language tag)
-   * @param {string} options.format The format in which to format the date (must be a valid format string, or 'iso')
-   * @param {string} options.timeZone The time zone in which to format the date (must be a valid IANA time zone name, or 'UTC')
+   * @param {DatePartCollection} parts An array of objects representing the parts of a Date 
+   * that have been parsed from value
+   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on 
+   * the object.
    * @returns {Date} The Date value parsed by using the parts to extract data from value.
    */
   static #getDateFromParts(value, parts, options) {
-    // Currently only parsing numeric values and month names, but not weekdays; not sure what to do with a weekday even if I did
-    // parse it successfully; Given a year, a month, and a day, I'd already know the weekday, so what if the parsed one is
-    // different? If I get a year, a month, and a weekday, I'd need a week number to know what day it is, and there currently is no
-    // token for week number.
+    // Currently only parsing numeric values and month names, but not weekdays; not sure 
+    // what to do with a weekday even if I did parse it successfully; Given a year, a month, 
+    // and a day, I'd already know the weekday, so what if the parsed one is different? If I 
+    // get a year, a month, and a weekday, I'd need a week number to know what day it is, 
+    // and there currently is no token for week number.
     const nonAlphaNumChars = new Set(
       [...value].filter((c) => /[^\p{L}\p{N}]/u.test(c))
     );
@@ -3925,10 +3982,8 @@ export default class DateHelper {
   /**
    * Parses a value as a Date object using the provided options.
    * @param {Date|string|number|undefined|null} value The value to parse.
-   * @param {object} options Hash of properties to use when parsing a string. Only relevant when value is a string.
-   * @param {string|string[]} options.locale The locales in which to parse the date (must be valid BCP 47 language tags). Only relevant when value is a string.
-   * @param {string|string[]} options.format The format in which to parse the date (must be valid format strings). Only relevant when value is a string.
-   * @param {string|string[]} options.timeZone The time zone in which to parse the date (must be valid IANA time zone names, or 'UTC'). Only relevant when value is a string.
+   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on 
+   * the object. Only relevant when value is a string.
    * @returns {Date|undefined|null} The parsed Date, or undefined/null if passed in.
    */
   static parseDate(value, options) {
@@ -4003,7 +4058,8 @@ export default class DateHelper {
   /**
    * Formats a date using the properties of the current instance.
    * @param {Date} date The Date object to format
-   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on the object. Note that it's probably easier to just use the static function in this case.
+   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on 
+   * the object. Note that it's probably easier to just use the static function in this case.
    * @returns {string} The formatted date.
    */
   formatDate(date, options) {
@@ -4017,7 +4073,8 @@ export default class DateHelper {
   /**
    * Parses a value as a Date object using the provided options.
    * @param {Date} value The value to parse
-   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on the object. Note that it's probably easier to just use the static function in this case.
+   * @param {DateHelperOptions} options Optional hash of overrides for the properties set on 
+   * the object. Note that it's probably easier to just use the static function in this case.
    * @returns {Date|undefined|null} The parsed Date, or undefined/null if passed in as value.
    */
   parseDate(value, options) {

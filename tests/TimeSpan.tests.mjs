@@ -1,5 +1,5 @@
 import TimeSpan from '../TimeSpan.mjs';
-import { Assert } from './test.mjs';
+import { Assert } from './DescribeAssert.mjs';
 
 function runTests() {
   try {

@@ -1,4 +1,4 @@
-import { Assert } from './test.mjs';
+import { Assert } from './DescribeAssert.mjs';
 import RelativeDateParser from '../RelativeDateParser.mjs';
 
 function runTests() {

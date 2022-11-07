@@ -1,6 +1,6 @@
 import DateHelper, { DateComparisonGranularity } from "../DateHelper.mjs";
 import { Logger, LogLevel } from "../Logger.mjs";
-import { Assert } from "./test.mjs";
+import { Assert } from "./DescribeAssert.mjs";
 
 function runTests() {
   let dh = new DateHelper("en-US");
@@ -35,7 +35,7 @@ function runTests() {
       "isSame",
       `"${date.toLocaleString([], {
         era: "short",
-      })}" should not be the same as "${datePlus101y.toLocaleString([], {
+      })}" should not be the same as "${dateWithNegYear.toLocaleString([], {
         era: "short",
       })}" at era granularity`
     );

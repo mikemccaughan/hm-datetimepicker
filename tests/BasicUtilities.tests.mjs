@@ -1,5 +1,5 @@
 import BasicUtilities, { DateComparisonGranularity, DeepEqualityArgs, NumberComparisonGranularity } from '../BasicUtilities.mjs';
-import { Assert } from './test.mjs';
+import { Assert } from './DescribeAssert.mjs';
 
 function runTests() {
   const fn = () => { };
@@ -44,7 +44,7 @@ function runTests() {
       BasicUtilities.areTheSame(true, true),
       true,
       'areTheSame',
-      'true and true are not same'
+      'true and true are the same'
     );
     Assert.isEqual(
       BasicUtilities.areTheSame(true, false),
