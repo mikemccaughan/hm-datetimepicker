@@ -110,6 +110,9 @@ class DatePartCollection extends Set {
     this.#parts.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
   }
 }
+/**
+ * A specific part of a date. See #validTypes for a list of parts.
+ */
 class DatePart {
   #index;
   #length;
@@ -343,6 +346,7 @@ class DatePart {
     }
   }
 
+  // Each valid type of date part has its own property, each with its own default.
   literal = undefined;
   dateStyle = undefined;
   timeStyle = undefined;
@@ -1258,7 +1262,7 @@ export default class DateHelper {
      * Formats the time of day using a "short" format (implementation-dependent, known as "Abbreviated" in Unicode TR35);
      * e.g., "pm", "am", "PM"
      */
-    aa: {
+    aaa: {
       dayPeriod: "short",
       name: "dayPeriod-short",
       type: "dayPeriod",
@@ -1289,7 +1293,7 @@ export default class DateHelper {
      * e.g., "at night", "midnight", "noon"
      * !! Unsupported !!
      */
-    bb: {
+    bbb: {
       dayPeriod: "short",
       name: "dayPeriod-short",
       type: "dayPeriod",
@@ -1322,7 +1326,7 @@ export default class DateHelper {
      * e.g., "at night", "at night", "at night"
      * !! Unsupported !!
      */
-    BB: {
+    BBB: {
       dayPeriod: "short",
       name: "dayPeriod-short",
       type: "dayPeriod",
@@ -2073,7 +2077,7 @@ export default class DateHelper {
           `Time zone cannot be formatted using "${tz[0]}" (${timeZoneName})`
         );
       }
-      tz[1] = {
+      DateHelper.stringsToFormatMap[tz[0]] = {
         ...tz[1],
         supported,
       };
@@ -2102,6 +2106,8 @@ export default class DateHelper {
       tzdb.find((tz) => tz.timeZoneName.trim() === timeZone.trim())
     ) {
       return { valid: true, value: timeZone.trim() };
+    } else if (Array.isArray(timeZone) && tzdb.some((tz) => timeZone.some((tZ) => tz.timeZoneName.trim() === tZ.trim()))) {
+      return { valid: true, value: timeZone };
     }
     return {
       valid: false,
@@ -2131,6 +2137,14 @@ export default class DateHelper {
    */
   static validTimeZoneNames() {
     return tzdb.map((tz) => tz.timeZoneName).sort();
+  }
+  /**
+   * Gets the BCP 47 language tag for the locale used by the browser.
+   * @returns {string|undefined|null} The locale the browser reports would be used if none was 
+   * provided.
+   */
+  static getProbableClientLocale() {
+    return new Intl.DateTimeFormat().resolvedOptions().locale;
   }
   /**
    * Gets data about the likely time zone from the IANA Time Zone database
@@ -2456,7 +2470,7 @@ export default class DateHelper {
               part.field = "a";
               break;
             case "short":
-              part.field = "aa";
+              part.field = "aaa";
               break;
             case "long":
               part.field = "aaaa";

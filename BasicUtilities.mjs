@@ -265,4 +265,7 @@ export default class BasicUtilities {
       return !!value;
     }
   }
+  static isNUEmpty(value) {
+    return value == null || (typeof value === 'string' && value.length === 0);
+  }
 }

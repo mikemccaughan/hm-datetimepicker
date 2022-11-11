@@ -23,7 +23,6 @@ function writeFileToResponse(res, fileName, mimeType, encoding) {
 
 const server = createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    console.log(import.meta.url);
     const fileName = path.join(import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', ''), url.pathname);
     const ext = path.extname(url.pathname);
     const isFileNameRequest = ext !== '';

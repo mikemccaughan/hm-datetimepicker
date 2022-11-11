@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <title>Date/Time Playground</title>
+    <script type="module" src="./DateHelper.mjs"></script>
+    <script type="module" src="./HMDateTimePickerComponent.mjs"></script>
+    <script type="module" src="./Pills.mjs"></script>
+    <script type="module">
+      import DateHelper from "./DateHelper.mjs";
+      import { PillContainer } from "./Pills.mjs";
+      import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
+      const dtp = document.getElementById("hm-dtp");
+      const locales = document.getElementById("locales");
+      locales.value = DateHelper.getProbableClientLocale();
+      const timezones = document.getElementById("timezones");
+      timezones.value = DateHelper.getProbableClientTimeZoneName(locales.value);
+      const format = document.getElementById("format");
+      format.value = DateHelper.getDefaultFormatForLocale(locales.value);
+      const editFormat = document.getElementById("edit-format");
+      const formatted = document.getElementById("formatted");
+      function updateFormattedDate() {
+        const formatOptions = {
+          locale: locales.value.split(PillContainer.delimiter),
+          format: format.value,
+          timeZone: timezones.value.split(PillContainer.delimiter),
+        };
+        formatted.value = DateHelper.formatDate(dtp.value, formatOptions);
+      }
+      format.addEventListener("input", updateFormattedDate);
+      locales.addEventListener("input", updateFormattedDate);
+      locales.addEventListener("change", updateFormattedDate);
+      timezones.addEventListener("input", updateFormattedDate);
+      timezones.addEventListener("change", updateFormattedDate);
+
+      editFormat.addEventListener("input", (e) => {
+        format.readonly = !e.target.checked;
+        document.getElementById("format-options").disabled = e.target.checked;
+      });
+
+      const numberingSystems = Intl.supportedValuesOf("numberingSystem");
+      const numberingSystem = document.getElementById("numberingSystem");
+      for (const ns of numberingSystems) {
+        const option = document.createElement("option");
+        option.text = option.value = ns;
+        option.defaultSelected = ns === "latn";
+        numberingSystem.appendChild(option);
+      }
+      const calendars = Intl.supportedValuesOf("calendar");
+      const calendar = document.getElementById("calendar");
+      for (const ca of calendars) {
+        const option = document.createElement("option");
+        option.text = option.value = ca;
+        option.defaultSelected = ca === "gregory";
+        calendar.appendChild(option);
+      }
+
+      let formatOptions = new DateTimeFormattingOptions();
+      const styles = document.querySelectorAll(".style");
+      const notStyles = document
+        .getElementById("format-options")
+        .querySelectorAll("input:not(.style),select:not(.style)");
+      styles.forEach((style) => {
+        style.addEventListener("change", (e) => {
+          formatOptions.setValue(e.target.id, e.target.value);
+          if (!formatOptions.valid) {
+            e.target.setCustomValidity(`Something isn't right here. Note that if a style is set, none of the other options should be set.`);
+          }
+          dealWithStyles();
+        });
+        style.dispatchEvent(new Event("change"));
+      });
+      notStyles.forEach((ns) => {
+        ns.addEventListener("change", (e) => {
+          if (e.target.type === "checkbox") {
+            formatOptions.setValue(e.target.id, e.target.checked);
+          } else {
+            formatOptions.setValue(e.target.id, e.target.value);
+          }
+          if (!formatOptions.valid) {
+            e.target.setCustomValidity(`Something isn't right here. Note that if a style is set, none of the other options should be set.`);
+          }
+          dealWithStyles()
+        });
+        ns.dispatchEvent(new Event("change"));
+      });
+      function dealWithStyles() {
+        styles.forEach((s) => (s.disabled = formatOptions.atLeastOneNonStyleSet));
+        notStyles.forEach((ns) => (ns.disabled = formatOptions.atLeastOneStyleSet));
+      }
+
+      function autoFormat(e) {
+        const opts = new DateTimeFormattingOptions();
+        opts.locale = locales.value.split(PillContainer.delimiter)[0];
+        opts.timeZone = timezones.value.split(PillContainer.delimiter)[0];
+        if (e.target.type === "checkbox") {
+          opts.setValue(e.target.id, e.target.checked);
+        } else {
+          opts.setValue(e.target.id, e.target.value);
+        }
+        const output = document.getElementById(`${e.target.id}-formatted`);
+        if (opts.valid) {
+          output.textContent = Intl.DateTimeFormat(opts.locale, opts.toDateTimeFormatOptions()).format(dtp.value);
+        } else {
+          output.textContent = `Some option was invalid.`;
+        }
+      }
+
+      const autoFormatOnInput = document.querySelectorAll('.auto-format');
+      autoFormatOnInput.forEach((el) => {
+        if (el.type === 'select-one') {
+          el.addEventListener('change', autoFormat);
+          el.dispatchEvent(new Event('change'));
+        } else {
+          el.addEventListener('input', autoFormat);
+          el.dispatchEvent(new Event('input'));
+        }
+      });
+    </script>
+    <style>
+      #formatted {
+        width: 30vw;
+      }
+      input:invalid, select:invalid {
+        border-color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>DateHelper - a library for formatting and parsing dates and times</h1>
+    <h2>Formatting</h2>
+    <form>
+      <div class="form-group">
+        <hm-date-time-picker
+          use-utc="true"
+          default-value="today"
+          format="M/d/y, HH:mm:ss"
+          min-date="-100y"
+          max-date="+100y"
+          show-on="focus button"
+          title='Date and Time to use for Formatting Examples (in "M/d/y, HH:mm:ss" format [24 hour time])'
+          id="hm-dtp"
+        >
+        </hm-date-time-picker>
+      </div>
+      <output class="form-group">
+        <label for="formatted">Formatted value:</label>
+        <input id="formatted" type="text" readonly />
+      </output>
+      <div class="form-group">
+        <label for="format">Format:</label>
+        <input id="format" type="text" readonly />
+        <label
+          ><input id="edit-format" type="checkbox" />Edit (ignores Format
+          Options selected below)</label
+        >
+      </div>
+      <p></p>
+      <fieldset>
+        <legend>Locale/Time Zone Options</legend>
+        <div class="form-group">
+          <hm-pill-container
+            id="locales"
+            data-pills-label='"Locales" <a href="#locales">*</a>'
+          >
+          </hm-pill-container>
+        </div>
+        <div class="form-group">
+          <hm-pill-container
+            id="timezones"
+            data-pills-label='Time Zones <a href="#time-zones">*</a>'
+            data-pills-select="true"
+            data-pills-select-source="DateHelper.validTimeZoneNames()"
+          >
+          </hm-pill-container>
+        </div>
+      </fieldset>
+      <fieldset id="format-options">
+        <legend>Format Options</legend>
+        <div class="form-group">
+          <label for="dateStyle"
+            >Date Style (choosing one disables all other options except Time
+            Style)</label
+          >
+          <select id="dateStyle" class="style auto-format">
+            <option value="">None</option>
+            <option value="full">Full</option>
+            <option value="long">Long</option>
+            <option value="medium">Medium</option>
+            <option selected value="short">Short</option>
+          </select>
+          <output id="dateStyle-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="timeStyle"
+            >Time Style (choosing one disables all other options except Date
+            Style)</label
+          >
+          <select id="timeStyle" class="style auto-format">
+            <option value="">None</option>
+            <option value="full">Full</option>
+            <option value="long">Long</option>
+            <option value="medium">Medium</option>
+            <option selected value="short">Short</option>
+          </select>
+          <output id="timeStyle-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="calendar"
+            >Calendar (Only "gregory" and "japanese" are supported)</label
+          >
+          <select id="calendar" class="auto-format">
+            <option value="">None</option>
+          </select>
+          <output id="calendar-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="dayPeriod"
+            >Day Period (note that for some implementations, this always shows
+            things like "in the morning" rather than "a", "AM", "Ante
+            Meridian"</label
+          >
+          <select id="dayPeriod" class="auto-format">
+            <option selected value="">None</option>
+            <option value="narrow">
+              Narrow (e.g., a, use aaaaa in format)
+            </option>
+            <option value="short">Short (e.g., AM, use aaa in format)</option>
+            <option value="long">
+              Long (e.g., Ante Meridian, use aaaa in format)
+            </option>
+          </select>
+          <output id="dayPeriod-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="numberingSystem"
+            >Numbering System (cannot be set in format)</label
+          >
+          <select id="numberingSystem" class="auto-format">
+            <option value="">None</option>
+          </select>
+          <output id="numberingSystem-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="hour12"
+            >hour12 (checked uses 12-hour time; unchecked uses 24-hour time;
+            this will override the setting by the locale; use h or hh for
+            12-hour time, H or HH for 24-hour time, in format)</label
+          >
+          <input id="hour12" type="checkbox" class="auto-format" />
+          <output id="hour12-formatted"></output>
+        </div>
+        <div class="form-group">
+          <label for="hourCycle"
+            >Hour Cycle (this will override the setting by the locale and hour12
+            if set; cannot be set in format)</label
+          >
+          <select id="hourCycle" class="auto-format">
+            <option selected value="">None</option>
+            <option value="h11">h11</option>
+            <option value="h12">h12</option>
+            <option value="h23">h23</option>
+            <option value="h24">h24</option>
+          </select>
+          <output id="hourCycle-formatted"></output>
+        </div>
+        <fieldset id="date-part-options">
+          <legend>Specific Date Part Options</legend>
+          <div class="form-group">
+            <label for="weekday">Weekday</label>
+            <select id="weekday" class="auto-format">
+              <option selected value="">None</option>
+              <option value="narrow">
+                Narrow (e.g., T, use EEEEE in format)
+              </option>
+              <option value="short">
+                Short (e.g., Thu, use EEE in format)
+              </option>
+              <option value="long">
+                Long (e.g., Thursday, use EEEE in format)
+              </option>
+            </select>
+            <output id="weekday-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="era">Era</label>
+            <select id="era" class="auto-format">
+              <option selected value="">None</option>
+              <option value="narrow">
+                Narrow (e.g., A, use GGGGG in format)
+              </option>
+              <option value="short">Short (e.g., AD, use GGG in format)</option>
+              <option value="long">
+                Long (e.g., Anno Domini, use GGGG in format)
+              </option>
+            </select>
+            <output id="era-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="year">Year</label>
+            <select id="year" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 2012, use y in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 12, use yy in format)
+              </option>
+            </select>
+            <output id="year-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="month">Month</label>
+            <select id="month" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 3, use M in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 03, use MM in format)
+              </option>
+              <option value="narrow">
+                Narrow (e.g., M, use MMMMM in format)
+              </option>
+              <option value="short">
+                Short (e.g., Mar, use MMM in format)
+              </option>
+              <option value="long">
+                Long (e.g., March, use MMMM in format)
+              </option>
+            </select>
+            <output id="month-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="day">Day</label>
+            <select id="day" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 1, use d in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 01, use dd in format)
+              </option>
+            </select>
+            <output id="day-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="hour">Hour</label>
+            <select id="hour" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 1, use h in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 01, use hh in format)
+              </option>
+            </select>
+            <output id="hour-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="minute">Minute</label>
+            <select id="minute" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 1, use m in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 01, use mm in format)
+              </option>
+            </select>
+            <output id="minute-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="second">Second</label>
+            <select id="second" class="auto-format">
+              <option selected value="">None</option>
+              <option value="numeric">
+                numeric (e.g., 1, use s in format)
+              </option>
+              <option value="2-digit">
+                2-digit (e.g., 01, use ss in format)
+              </option>
+            </select>
+            <output id="second-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="fractionalSecondDigits">Fractional Second Digits</label>
+            <select id="fractionalSecondDigits" class="auto-format">
+              <option selected value="">None</option>
+              <option value="0">No fractional portion shown</option>
+              <option value="1">
+                1 digit displayed (e.g., 555 milliseconds is formatted as .5,
+                use .f in format
+              </option>
+              <option value="2">
+                2 digits displayed (e.g., 555 milliseconds is formatted as .55,
+                use .ff in format
+              </option>
+              <option value="3">
+                3 digits displayed (e.g., 555 milliseconds is formatted as .555,
+                use .fff in format
+              </option>
+            </select>
+            <output id="fractionalSecondDigits-formatted"></output>
+          </div>
+          <div class="form-group">
+            <label for="timeZoneName">Time Zone Name</label>
+            <select id="timeZoneName" class="auto-format">
+              <option selected value="">None</option>
+              <option value="short">
+                Short (e.g., PST, use zzz in format)
+              </option>
+              <option value="long">
+                Long (e.g., Pacific Standard Time, use zzzz in format)
+              </option>
+              <option value="shortOffset">
+                Short Offset (e.g., GMT-8, use ZZZ in format; note that some
+                runtimes may not support)
+              </option>
+              <option value="longOffset">
+                Long Offset (e.g., GMT-0800, use ZZZZ in format; note that some
+                runtimes may not support)
+              </option>
+              <option value="shortGeneric">
+                Short Generic (e.g., PT, use v in format; note that some
+                runtimes may not support)
+              </option>
+              <option value="longGeneric">
+                Long Generic (e.g., Pacific Time, use vvvv in format; note that
+                some runtimes may not support)
+              </option>
+            </select>
+            <output id="timeZoneName-formatted"></output>
+          </div>
+        </fieldset>
+      </fieldset>
+    </form>
+  </body>
+</html>

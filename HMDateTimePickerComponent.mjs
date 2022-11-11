@@ -2,43 +2,8 @@ import RelativeDateParser from './RelativeDateParser.mjs';
 import TokenList from './TokenList.mjs';
 import DateHelper from './DateHelper.mjs';
 import BasicUtilities from './BasicUtilities.mjs';
-/**
- * Provides a simple enumeration of log levels, named for the console methods, with
- * Log being the "lowest" level (setting the log level to Log displays all Log, 
- * Warn, and Error level logs)
- */
-export class LogLevel {
-  static Log = 0;
-  static Warn = 1;
-  static Error = 2;
-}
-/**
- * Implements the Storage API for a simple in-memory cache.
- */
-class MemoryStorage /*extends Storage*/ {
-  #items = new Map();
-  constructor() {
-    /* super(); */
-  }
-  clear() {
-    this.#items.clear();
-  }
-  getItem(key) {
-    return this.#items.get(key);
-  }
-  setItem(key, value) {
-    this.#items.set(key, value);
-  }
-  removeItem(key) {
-    this.#items.delete(key);
-  }
-  key(index) {
-    return Array.from(this.#items.keys()).at(index);
-  }
-  get length() {
-    return this.#items.size;
-  }
-}
+import { LogLevel } from './Logger.mjs';
+import MemoryStorage from './MemoryStorage.mjs';
 /**
  * Simple in-memory cache of often-used, calculation-heavy values, such as all dates
  * in a given year (allDatesInYear) or year and month (allDatesInMonth).
