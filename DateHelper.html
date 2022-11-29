@@ -9,6 +9,9 @@
       import DateHelper from "./DateHelper.mjs";
       import { PillContainer } from "./Pills.mjs";
       import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
+      import bu from "./BasicUtilities.mjs";
+      import {Logger,LogLevel} from "./Logger.mjs";
+      Logger.LogLevel = LogLevel.Trace;
       const dtp = document.getElementById("hm-dtp");
       const locales = document.getElementById("locales");
       locales.value = DateHelper.getProbableClientLocale();
@@ -63,29 +66,49 @@
         style.addEventListener("change", (e) => {
           formatOptions.setValue(e.target.id, e.target.value);
           if (!formatOptions.valid) {
-            e.target.setCustomValidity(`Something isn't right here. Note that if a style is set, none of the other options should be set.`);
+            e.target.setCustomValidity(
+              `Something isn't right here. Note that if a style is set, none of the other options should be set.`
+            );
           }
           dealWithStyles();
         });
         style.dispatchEvent(new Event("change"));
       });
       notStyles.forEach((ns) => {
-        ns.addEventListener("change", (e) => {
-          if (e.target.type === "checkbox") {
-            formatOptions.setValue(e.target.id, e.target.checked);
-          } else {
+        if (ns.type === "checkbox") {
+          ns.addEventListener("input", (e) => {
+            formatOptions.setValue(
+              e.target.id,
+              e.target.indeterminate ? undefined : e.target.checked
+            );
+            if (!formatOptions.valid) {
+              e.target.setCustomValidity(
+                `Something isn't right here. Note that if a style is set, none of the other options should be set.`
+              );
+            }
+            dealWithStyles();
+          });
+          ns.dispatchEvent(new Event("input"));
+        } else {
+          ns.addEventListener("change", (e) => {
             formatOptions.setValue(e.target.id, e.target.value);
-          }
-          if (!formatOptions.valid) {
-            e.target.setCustomValidity(`Something isn't right here. Note that if a style is set, none of the other options should be set.`);
-          }
-          dealWithStyles()
-        });
-        ns.dispatchEvent(new Event("change"));
+            if (!formatOptions.valid) {
+              e.target.setCustomValidity(
+                `Something isn't right here. Note that if a style is set, none of the other options should be set.`
+              );
+            }
+            dealWithStyles();
+          });
+          ns.dispatchEvent(new Event("change"));
+        }
       });
       function dealWithStyles() {
-        styles.forEach((s) => (s.disabled = formatOptions.atLeastOneNonStyleSet));
-        notStyles.forEach((ns) => (ns.disabled = formatOptions.atLeastOneStyleSet));
+        styles.forEach(
+          (s) => (s.disabled = formatOptions.atLeastOneNonStyleSet)
+        );
+        notStyles.forEach(
+          (ns) => (ns.disabled = formatOptions.atLeastOneStyleSet)
+        );
       }
 
       function autoFormat(e) {
@@ -93,26 +116,65 @@
         opts.locale = locales.value.split(PillContainer.delimiter)[0];
         opts.timeZone = timezones.value.split(PillContainer.delimiter)[0];
         if (e.target.type === "checkbox") {
-          opts.setValue(e.target.id, e.target.checked);
+          opts.setValue(
+            e.target.id,
+            e.target.indeterminate ? undefined : e.target.checked
+          );
         } else {
           opts.setValue(e.target.id, e.target.value);
         }
         const output = document.getElementById(`${e.target.id}-formatted`);
         if (opts.valid) {
-          output.textContent = Intl.DateTimeFormat(opts.locale, opts.toDateTimeFormatOptions()).format(dtp.value);
+          output.textContent = Intl.DateTimeFormat(
+            opts.locale,
+            opts.toDateTimeFormatOptions()
+          ).format(dtp.value);
         } else {
           output.textContent = `Some option was invalid.`;
         }
       }
 
-      const autoFormatOnInput = document.querySelectorAll('.auto-format');
+      function toggleIndeterminateCheckbox(e) {
+        if (
+          bu.parseBoolean(e.target.dataset?.indeterminateChanged ?? false) ||
+          !bu.parseBoolean(e.target.dataset?.initialized ?? false)
+        ) {
+          e.target.indeterminate = bu.parseBoolean(
+            e.target.dataset?.indeterminate ?? true
+          );
+          e.target.dataset.indeterminate = true;
+          e.target.dataset.indeterminateChanged = false;
+          if (!bu.parseBoolean(e.target.dataset?.initialized ?? false)) {
+            e.target.checked = false;
+          } else {
+            e.target.checked = !e.target.checked;
+          }
+          e.target.dataset.initialized = true;
+        } else if (e.target.checked) {
+          e.target.dataset.indeterminate = false;
+          e.target.dataset.indeterminateChanged = false;
+        } else if (!e.target.checked) {
+          e.target.dataset.indeterminate = true;
+          e.target.dataset.indeterminateChanged = true;
+        }
+      }
+
+      const autoFormatOnInput = document.querySelectorAll(".auto-format");
       autoFormatOnInput.forEach((el) => {
-        if (el.type === 'select-one') {
-          el.addEventListener('change', autoFormat);
-          el.dispatchEvent(new Event('change'));
+        if (el.type === "select-one") {
+          el.addEventListener("change", autoFormat);
+          el.dispatchEvent(new Event("change"));
+        } else if (el.type === "checkbox") {
+          el.indeterminate = formatOptions[el.id] === undefined;
+          el.dataset.initialized = false;
+          el.dataset.indeterminateChanged = false;
+          el.addEventListener("input", toggleIndeterminateCheckbox);
+          el.addEventListener("change", autoFormat);
+          el.dispatchEvent(new Event("input"));
+          el.dispatchEvent(new Event("change"));
         } else {
-          el.addEventListener('input', autoFormat);
-          el.dispatchEvent(new Event('input'));
+          el.addEventListener("input", autoFormat);
+          el.dispatchEvent(new Event("input"));
         }
       });
     </script>
@@ -120,7 +182,8 @@
       #formatted {
         width: 30vw;
       }
-      input:invalid, select:invalid {
+      input:invalid,
+      select:invalid {
         border-color: red;
       }
     </style>
@@ -131,13 +194,13 @@
     <form>
       <div class="form-group">
         <hm-date-time-picker
-          use-utc="true"
-          default-value="today"
-          format="M/d/y, HH:mm:ss"
+          use-utc="false"
+          default-date="today"
+          format="y-MM-dd HH:mm:ss v"
           min-date="-100y"
           max-date="+100y"
           show-on="focus button"
-          title='Date and Time to use for Formatting Examples (in "M/d/y, HH:mm:ss" format [24 hour time])'
+          title='Date and Time to use for Formatting Examples (in "y-MM-dd HH:mm:ss v" format [24 hour time])'
           id="hm-dtp"
         >
         </hm-date-time-picker>
