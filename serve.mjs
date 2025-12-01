@@ -9,6 +9,7 @@ function writeFileToResponse(res, fileName, mimeType, encoding) {
             options.encoding = encoding;
         }
         const fileContents = readFileSync(fileName, options);
+        console.log(`Serving "${fileName}"...`);
         res
             .writeHead(200, {
                 'Content-Type': mimeType,
@@ -21,10 +22,22 @@ function writeFileToResponse(res, fileName, mimeType, encoding) {
     }
 }
 
+/**
+ * Gets the full path to the file specified by the given URL.
+ * @param {URL} url The URL from which to get the path and filename
+ * @returns {string} The full path to the file specified by the URL given.
+ */
+const getFileNameFromUrl = (url) => {
+    return path.join(
+        import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', ''), 
+        (url.pathname?.replace(/\/$/, '')?.length ?? 0) ? url.pathname.replace(/\/$/, '') : 'index.html'
+    );
+}
+
 const server = createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const fileName = path.join(import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', ''), url.pathname);
-    const ext = path.extname(url.pathname);
+    let fileName = getFileNameFromUrl(url);
+    let ext = path.extname(url.pathname);
     const isFileNameRequest = ext !== '';
     if (isFileNameRequest) {
         switch (ext.toLowerCase()) {
@@ -42,7 +55,15 @@ const server = createServer((req, res) => {
             case '.json':
                 writeFileToResponse(res, fileName, 'application/json;charset=utf-8', 'utf-8');
                 break;
+            default:
+                fileName = getFileNameFromUrl(url);
+                writeFileToResponse(res, fileName, 'text/html;charset=utf-8', 'utf-8');
         }
+    } else {
+        console.log(`basepath: ${import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', '')}`);
+        console.log(`pathname: ${(url.pathname?.replace(/\/$/, '')?.length ?? 0) ? url.pathname.replace(/\/$/, '') : 'index.html'}`);
+        fileName = getFileNameFromUrl(url);
+        writeFileToResponse(res, fileName, 'text/html;charset=utf-8', 'utf-8');
     }
 });
 server.listen(4321);

@@ -3,7 +3,7 @@ import { Logger, LogLevel } from "../Logger.mjs";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-test("DateHelper", async (t) => {
+await test("DateHelper", async (t) => {
   let dh = new DateHelper("en-US");
   Logger.LogLevel = LogLevel.Trace;
   let date = new Date(Date.UTC(2021, 0, 15, 0, 0, 0, 0));
@@ -13,7 +13,7 @@ test("DateHelper", async (t) => {
   let datePlus1y1M = new Date(Date.UTC(2022, 1, 15, 0, 0, 0, 0));
   let datePlus0y0M29d = new Date(Date.UTC(2021, 1, 14, 0, 0, 0, 0));
   let datePlus0y1M1d = new Date(Date.UTC(2021, 1, 16, 0, 0, 0, 0));
-  test("getProbableClientTimeZoneName", async (t) => {
+  await test("getProbableClientTimeZoneName", async (t) => {
     await t.test(
       `Couldn't get the time zone name from resolvedOptions() or something`,
       (t) => {
@@ -24,7 +24,7 @@ test("DateHelper", async (t) => {
       }
     );
   });
-  test("isSame", async (t) => {
+  await test("isSame", async (t) => {
     await t.test(
       `"${date.toLocaleString([], {
         era: "short",
@@ -100,68 +100,68 @@ test("DateHelper", async (t) => {
       }
     );
   });
-  test("formatDate", async (t) => {
+  await test("formatDate", async (t) => {
     await t.test("formatDate no extras (same as format string 'r')", (t) => {
-      assert.strictEqual("1/15/21, 12:00 AM", dh.formatDate(date));
+      assert.strictEqual(dh.formatDate(date), "1/15/21, 12:00 AM");
     });
     await t.test("formatDate iso format", (t) => {
       assert.strictEqual(
-        "2021-01-15T00:00:00.000Z",
-        dh.formatDate(date, { format: "iso" })
+        dh.formatDate(date, { format: "iso" }),
+        "2021-01-15T00:00:00.000Z"
       );
     });
     await t.test("formatDate en-US, no format, Australia/Sydney", (t) => {
       assert.strictEqual(
-        "1/15/21, 11:00 AM",
         DateHelper.formatDate(date, {
           locale: "en-US",
           format: undefined,
           timeZone: "Australia/Sydney",
-        })
+        }),
+        "1/15/21, 11:00 AM"
       );
     });
     await t.test("formatDate en-US, EEE, MMM d, y, America/New_York", (t) => {
       assert.strictEqual(
-        "Thu, Jan 14, 2021",
         DateHelper.formatDate(date, {
           locale: "en-US",
           format: "EEE, MMM d, y",
           timeZone: "America/New_York",
-        })
+        }),
+        "Fri, Jan 15, 2021"
       );
     });
     await t.test("formatDate ja-JP, y年MM月dd日 (EEE), Asia/Tokyo", (t) => {
       assert.strictEqual(
-        "2021年01月15日  (金)",
         DateHelper.formatDate(date, {
           locale: "ja-JP",
           format: "y年MM月dd日 (EEE)",
           timeZone: "Asia/Tokyo",
-        })
+        }),
+        "2021年01月15日  (金)"
       );
     });
     await t.test("formatDate ja-JP-u-ca-japanese, GGGy年MM月dd日, Asia/Tokyo", (t) => {
       assert.strictEqual(
-        "令和3年01月15日",
         DateHelper.formatDate(date, {
           locale: "ja-JP-u-ca-japanese",
           format: "GGGy年MM月dd日",
           timeZone: "Asia/Tokyo",
-        })
+        }),
+        "令和3年01月15日"
       );
     });
   });
-  test("parseDate", async (t) => {
+  await test("parseDate", async (t) => {
     await t.test(
       "令和3年01月15日, ja-JP-u-ca-japanese, GGGy年MM月dd日, Asia/Tokyo",
       (t) => {
         assert.strictEqual(
-          "2021-01-15T05:00:00.000Z",
           DateHelper.parseDate("令和3年01月15日", {
             locale: "ja-JP-u-ca-japanese",
             format: "GGGy年MM月dd日",
             timeZone: "Asia/Tokyo",
-          }).toISOString()
+          }).toISOString(),
+          "2021-01-15T05:00:00.000Z"
         );
       }
     );

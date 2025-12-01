@@ -11,16 +11,21 @@
       import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
       import bu from "./BasicUtilities.mjs";
       import {Logger,LogLevel} from "./Logger.mjs";
+
       Logger.LogLevel = LogLevel.Trace;
-      const dtp = document.getElementById("hm-dtp");
-      const locales = document.getElementById("locales");
+      const dtp = document.querySelector("#hm-dtp");
+      const locales = document.querySelector("#locales");
       locales.value = DateHelper.getProbableClientLocale();
-      const timezones = document.getElementById("timezones");
+
+      const timezones = document.querySelector("#timezones");
       timezones.value = DateHelper.getProbableClientTimeZoneName(locales.value);
-      const format = document.getElementById("format");
+      
+      const format = document.querySelector("#format");
       format.value = DateHelper.getDefaultFormatForLocale(locales.value);
-      const editFormat = document.getElementById("edit-format");
-      const formatted = document.getElementById("formatted");
+      
+      const editFormat = document.querySelector("#edit-format");
+      const formatted = document.querySelector("#formatted");
+      
       function updateFormattedDate() {
         const formatOptions = {
           locale: locales.value.split(PillContainer.delimiter),
@@ -29,6 +34,7 @@
         };
         formatted.value = DateHelper.formatDate(dtp.value, formatOptions);
       }
+      
       format.addEventListener("input", updateFormattedDate);
       locales.addEventListener("input", updateFormattedDate);
       locales.addEventListener("change", updateFormattedDate);
@@ -36,20 +42,25 @@
       timezones.addEventListener("change", updateFormattedDate);
 
       editFormat.addEventListener("input", (e) => {
-        format.readonly = !e.target.checked;
-        document.getElementById("format-options").disabled = e.target.checked;
+        const formatEditable = e.target.checked;
+        format.readOnly = !formatEditable;
+        if (formatEditable) {
+          format.removeAttribute("readonly");
+        }
+        document.querySelector("#format-options").disabled = formatEditable;
       });
 
       const numberingSystems = Intl.supportedValuesOf("numberingSystem");
-      const numberingSystem = document.getElementById("numberingSystem");
+      const numberingSystem = document.querySelector("#numberingSystem");
       for (const ns of numberingSystems) {
         const option = document.createElement("option");
         option.text = option.value = ns;
         option.defaultSelected = ns === "latn";
         numberingSystem.appendChild(option);
       }
+      
       const calendars = Intl.supportedValuesOf("calendar");
-      const calendar = document.getElementById("calendar");
+      const calendar = document.querySelector("#calendar");
       for (const ca of calendars) {
         const option = document.createElement("option");
         option.text = option.value = ca;
@@ -58,10 +69,9 @@
       }
 
       let formatOptions = new DateTimeFormattingOptions();
-      const styles = document.querySelectorAll(".style");
+      const styles = document.querySelectorAll("#format-options .style");
       const notStyles = document
-        .getElementById("format-options")
-        .querySelectorAll("input:not(.style),select:not(.style)");
+        .querySelectorAll("#format-options *:is(input:not(.style),select:not(.style))");
       styles.forEach((style) => {
         style.addEventListener("change", (e) => {
           formatOptions.setValue(e.target.id, e.target.value);
@@ -123,7 +133,7 @@
         } else {
           opts.setValue(e.target.id, e.target.value);
         }
-        const output = document.getElementById(`${e.target.id}-formatted`);
+        const output = document.querySelector(`#${e.target.id}-formatted`);
         if (opts.valid) {
           output.textContent = Intl.DateTimeFormat(
             opts.locale,

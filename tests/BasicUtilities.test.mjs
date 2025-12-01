@@ -1,14 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import BasicUtilities, {
-  DeepEqualityArgs,
   NumberComparisonGranularity,
 } from "../BasicUtilities.mjs";
-import { DateComparisonGranularity } from "../DateHelper.mjs";
+import DateHelper, { DateComparisonGranularity } from "../DateHelper.mjs";
 
 test("BasicUtilities", async (t) => {
   const fn = () => {};
-  test("areTheSame", async (t) => {
+  await test("areTheSame", async (t) => {
     await t.test("1 and 1 are the same", (t) => {
       assert.strictEqual(true, BasicUtilities.areTheSame(1, 1));
     });
@@ -187,7 +186,7 @@ test("BasicUtilities", async (t) => {
       }
     );
   });
-  test("deepEquals", async (t) => {
+  await test("deepEquals", async (t) => {
     await t.test(
       "validatePropertyOrder causes deepEquals to return false when two objects share the same values but in different order",
       (t) => {
@@ -232,223 +231,223 @@ test("BasicUtilities", async (t) => {
         );
       }
     );
-    test("NumberComparisonGranularity", async (t) => {
-        async function testDeepEquals(t, a, b, deepArgs, expected, text) {
-            await t.test(text, (t) => {
-              assert.strictEqual(expected, BasicUtilities.deepEquals(a, b, deepArgs));
-            });
-          }
-          let a = 1;
-          let b = 1.01;
-          let args = {
-            numberGranularity: NumberComparisonGranularity.Hundredths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Hundredths allows a difference of 0.01 between the two values"
-          );
-          a = 1;
-          b = 1.011;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Hundredths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Hundredths does not allow a difference of > 0.01 between the two values"
-          );
-          a = 1;
-          b = 1 + Number.EPSILON;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Default,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Default allows a difference of Number.EPSILON between the two values"
-          );
-          a = 1;
-          b = 1 + 2 * Number.EPSILON;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Default,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Default does not allow a difference of > Number.EPSILON between the two values"
-          );
-          a = 1;
-          b = 101;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Hundreds,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Hundreds allows a difference of 100 between the two values"
-          );
-          a = 1;
-          b = 101.1;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Hundreds,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Hundreds does not allow a difference of > 100 between the two values"
-          );
-          a = 1;
-          b = 2;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Integer,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Integer allows a difference of 1 between the two values"
-          );
-          a = 1;
-          b = 2.1;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Integer,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Integer does not allow a difference of > 1 between the two values"
-          );
-          a = 1;
-          b = 11;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Tens,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Tens allows a difference of 10 between the two values"
-          );
-          a = 1;
-          b = 11.1;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Tens,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Tens does not allow a difference of > 10 between the two values"
-          );
-          a = 1;
-          b = 1.1;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Tenths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Tenths allows a difference of 0.1 between the two values"
-          );
-          a = 1;
-          b = 1.11;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Tenths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Tenths does not allow a difference of > 0.1 between the two values"
-          );
-          a = 1;
-          b = 1001;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Thousands,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Thousands allows a difference of 1000 between the two values"
-          );
-          a = 1;
-          b = 1001.1;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Thousands,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Thousands does not allow a difference of > 1000 between the two values"
-          );
-          a = 1;
-          b = 1.001;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Thousandths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            true,
-            "NumberComparisonGranularity.Thousanths allows a difference of 0.001 between the two values"
-          );
-          a = 1;
-          b = 1.0011;
-          args = {
-            numberGranularity: NumberComparisonGranularity.Thousandths,
-          };
-          await testDeepEquals(
-            t,
-            a,
-            b,
-            args,
-            false,
-            "NumberComparisonGranularity.Thousanths does not allow a difference of > 0.001 between the two values"
-          );      
+    await test("NumberComparisonGranularity", async (t) => {
+      async function testDeepEquals(t, a, b, deepArgs, expected, text) {
+        await t.test(text, (t) => {
+          assert.strictEqual(expected, BasicUtilities.deepEquals(a, b, deepArgs));
+        });
+      }
+      let a = 1;
+      let b = 1.01;
+      let args = {
+        numberGranularity: NumberComparisonGranularity.Hundredths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Hundredths allows a difference of 0.01 between the two values"
+      );
+      a = 1;
+      b = 1.011;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Hundredths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Hundredths does not allow a difference of > 0.01 between the two values"
+      );
+      a = 1;
+      b = 1 + Number.EPSILON;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Default,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Default allows a difference of Number.EPSILON between the two values"
+      );
+      a = 1;
+      b = 1 + 2 * Number.EPSILON;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Default,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Default does not allow a difference of > Number.EPSILON between the two values"
+      );
+      a = 1;
+      b = 101;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Hundreds,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Hundreds allows a difference of 100 between the two values"
+      );
+      a = 1;
+      b = 101.1;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Hundreds,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Hundreds does not allow a difference of > 100 between the two values"
+      );
+      a = 1;
+      b = 2;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Integer,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Integer allows a difference of 1 between the two values"
+      );
+      a = 1;
+      b = 2.1;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Integer,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Integer does not allow a difference of > 1 between the two values"
+      );
+      a = 1;
+      b = 11;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Tens,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Tens allows a difference of 10 between the two values"
+      );
+      a = 1;
+      b = 11.1;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Tens,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Tens does not allow a difference of > 10 between the two values"
+      );
+      a = 1;
+      b = 1.1;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Tenths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Tenths allows a difference of 0.1 between the two values"
+      );
+      a = 1;
+      b = 1.11;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Tenths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Tenths does not allow a difference of > 0.1 between the two values"
+      );
+      a = 1;
+      b = 1001;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Thousands,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Thousands allows a difference of 1000 between the two values"
+      );
+      a = 1;
+      b = 1001.1;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Thousands,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Thousands does not allow a difference of > 1000 between the two values"
+      );
+      a = 1;
+      b = 1.001;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Thousandths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        true,
+        "NumberComparisonGranularity.Thousanths allows a difference of 0.001 between the two values"
+      );
+      a = 1;
+      b = 1.0011;
+      args = {
+        numberGranularity: NumberComparisonGranularity.Thousandths,
+      };
+      await testDeepEquals(
+        t,
+        a,
+        b,
+        args,
+        false,
+        "NumberComparisonGranularity.Thousanths does not allow a difference of > 0.001 between the two values"
+      );
     });
   });
-  test("diffDates", (t) => {
+  await test("diffDates", async (t) => {
     async function testDiffDates(
       t,
       a,
@@ -460,38 +459,43 @@ test("BasicUtilities", async (t) => {
       text
     ) {
       await t.test(
-        `${text}: ("${a.toISOString()}", "${b.toISOString()}")`,
+        `${text}: ("${a?.toISOString()}", "${b?.toISOString()}", should return ${amount} ${unit})`,
         (t) => {
           assert.deepEqual(
             { amount, unit },
-            BasicUtilities.diffDates(a, b, granularity, custom)
+            DateHelper.diffDates(a, b, granularity, custom)
           );
         }
       );
     }
     let a = new Date(2021, 6, 15, 0, 0, 0, 0);
     let b = new Date(2022, 6, 15, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       undefined,
       undefined,
-      BasicUtilities.msPerYear,
+      DateHelper.msPerYear,
       DateComparisonGranularity.Millisecond,
       "default is the same as DateComparisonGranularity.Millisecond returns the number of milliseconds between two dates"
     );
     a = new Date(2021, 6, 15, 0, 0, 0, 0);
     b = new Date(2022, 6, 15, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Second,
       undefined,
-      BasicUtilities.msPerYear / BasicUtilities.msPerSecond,
+      DateHelper.msPerYear / DateHelper.msPerSecond,
       DateComparisonGranularity.Second,
       "DateComparisonGranularity.Second returns the number of seconds between two dates"
     );
-    testDiffDates(
+    a = new Date(2021, 6, 15, 0, 0, 0, 0);
+    b = new Date(2022, 6, 15, 0, 0, 0, 0);
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Year,
@@ -502,7 +506,8 @@ test("BasicUtilities", async (t) => {
     );
     a = new Date(2020, 0, 1, 0, 0, 0, 0);
     b = new Date(2022, 0, 1, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Year,
@@ -513,18 +518,20 @@ test("BasicUtilities", async (t) => {
     );
     a = new Date(2021, 6, 1, 12, 30, 30, 50);
     b = new Date(2022, 0, 1, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Year,
       undefined,
-      0.5027958507737189,
+      0.5026816955225774,
       DateComparisonGranularity.Year,
       "DateComparisonGranularity.Year returns the number of partial years between two dates"
     );
     a = new Date(2021, 0, 1, 0, 0, 0, 0);
     b = new Date(2021, 6, 1, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Month,
@@ -535,7 +542,8 @@ test("BasicUtilities", async (t) => {
     );
     a = new Date(2021, 1, 1, 0, 0, 0, 0);
     b = new Date(2021, 1, 15, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Month,
@@ -546,7 +554,8 @@ test("BasicUtilities", async (t) => {
     );
     a = new Date(2021, 0, 1, 0, 0, 0, 0);
     b = new Date(2021, 6, 1, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Quarter,
@@ -557,22 +566,23 @@ test("BasicUtilities", async (t) => {
     );
     a = new Date(2021, 6, 1, 0, 0, 0, 0);
     b = new Date(2021, 0, 1, 0, 0, 0, 0);
-    testDiffDates(
+    await testDiffDates(
+      t,
       a,
       b,
       DateComparisonGranularity.Custom,
       (a, b) => ({
         amount:
           Math.abs(a.valueOf() - b.valueOf()) /
-          (BasicUtilities.msPerDay * 30),
-        unit: "thrity-month",
+          (DateHelper.msPerDay * 30),
+        unit: "thirty-month",
       }),
-      6.031944444444444,
-      "thrity-month",
-      "DateComparisonGranularity.Custom returns the number of periods of thrity days between two dates"
+      6.033333333333333,
+      "thirty-month",
+      "DateComparisonGranularity.Custom returns the number of periods of thirty days between two dates"
     );
   });
-  test("parseBoolean", async (t) => {
+  await test("parseBoolean", async (t) => {
     await t.test('"True" is true', (t) => {
         assert.strictEqual(true, BasicUtilities.parseBoolean('True'));
     });

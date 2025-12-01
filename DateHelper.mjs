@@ -134,7 +134,7 @@ export default class DateHelper {
    * do a partial match (e.g., GGGGG has to come before GGGG, or a format string with GGGGG would
    * be matched by GGGG, and it would use the "long" version of the era plus an extra G in the
    * output, instead of the "narrow" version of the era).
-   * Note: There are a large number of format strings that are unused. These are mostly sourced 
+   * Note: There are a large number of format strings that are unused. These are mostly sourced
    * from Unicode's CLDR
    */
   static stringsToFormatMap = {
@@ -1885,16 +1885,8 @@ export default class DateHelper {
    * @param {string|string[]} options.locale (only the first element of an array will be used).
    * @param {undefined} options.format Will be ignored if present.
    * @param {string|string[]} options.timeZone (only the first element of an array will be used).
-   * @returns {object} The default format for dates and times for the given locale and time zone,
-   * expressed as an object whose keys are the names of date and time parts and whose values are the
-   * resolved options of those parts retrieved from formatting the current date and time to its
-   * constituent parts. For example:
-   * {
-   *   day: "numeric",
-   *   literal: undefined,
-   *   month: "numeric",
-   *   Year: "numeric"
-   * }
+   * @returns {DatePartCollection} The default format for dates and times for the given locale and time zone,
+   * expressed as a set of date and time parts.
    */
   static getDefaultFormatForDateAndTime(options) {
     let { locale, timeZone } = DateHelper.validateOptions(options);
@@ -1902,8 +1894,8 @@ export default class DateHelper {
     timeZone = DateHelper.flatToFirst(timeZone);
     const defaultFormat = new Intl.DateTimeFormat(locale, { timeZone });
     const parts = defaultFormat.formatToParts(Date.now());
-    const formatParts = parts.map((part) =>
-      this.#guessDatePartFromFormatPart(part)
+    const formatParts = new DatePartCollection(
+      parts.map((part) => this.#guessDatePartFromFormatPart(part))
     );
     return formatParts;
   }
@@ -2028,7 +2020,7 @@ export default class DateHelper {
       dateStyle: style,
       timeStyle: style,
     });
-    const referenceDate = new Date(2022, 1, 2, 2, 2, 2, 2);
+    const referenceDate = new Date(2022, 1, 2, 2, 2, 2, 2); // 2022-02-02T02:02:02.002Z
     // formatToParts generates an array of parts, each of which have a type and a value
     const formatted = defaultFormat.formatToParts(referenceDate);
     let format = "";
@@ -2852,7 +2844,11 @@ export default class DateHelper {
     for (let f of stringsToFind) {
       if (formatted.includes(f)) {
         const isStyle = styles.some((style) => f.includes(style));
-        const part = new DatePart(DateHelper.stringsToFormatMap[f]);
+        const part = new DatePart({
+          ...DateHelper.stringsToFormatMap[f],
+          locale,
+          timeZone,
+        });
         if (!isStyle) {
           part.name = DateHelper.stringsToFormatMap[f].name;
           part.type = DateHelper.stringsToFormatMap[f].type;
@@ -2862,7 +2858,7 @@ export default class DateHelper {
             f.length,
             part[part.type]?.toString().includes("2") ? 2 : 0
           );
-          result.add(part);
+          result.add(part, false);
           formatted = formatted.replace(f, "_".repeat(f.length));
         } else if (f === "iso") {
           // Always the same array of objects
@@ -2872,6 +2868,8 @@ export default class DateHelper {
               index: 0,
               length: 4,
               field: "yyyy",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 5, length: 1, value: "-" },
             {
@@ -2879,6 +2877,8 @@ export default class DateHelper {
               index: 6,
               length: 2,
               field: "MM",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 8, length: 1, value: "-" },
             {
@@ -2886,6 +2886,8 @@ export default class DateHelper {
               index: 9,
               length: 2,
               field: "dd",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 11, length: 1, value: "T" },
             {
@@ -2893,6 +2895,8 @@ export default class DateHelper {
               index: 12,
               length: 2,
               field: "HH",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 14, length: 1, value: ":" },
             {
@@ -2900,6 +2904,8 @@ export default class DateHelper {
               index: 15,
               length: 2,
               field: "mm",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 17, length: 1, value: ":" },
             {
@@ -2907,6 +2913,8 @@ export default class DateHelper {
               index: 18,
               length: 2,
               field: "ss",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 20, length: 1, value: "." },
             {
@@ -2914,6 +2922,8 @@ export default class DateHelper {
               index: 21,
               length: 3,
               field: "fff",
+              locale,
+              timeZone,
             },
             { type: "literal", index: 24, length: 1, value: "Z" },
           ]);
@@ -2948,13 +2958,18 @@ export default class DateHelper {
       name: `literal${idx}`,
       index,
       value,
+      length: value?.toString()?.length
     }));
 
     const literals = literalsPass5.map((literal) => new DatePart(literal));
 
-    return new DatePartCollection(
-      [...result, ...literals].sort((a, b) => a.index - b.index)
-    );
+    for (let l = 0, z = literals.length; l < z; l++) {
+      const literal = literals[l];
+      const lastOne = l === z - 1;
+      result.add(literal, lastOne);
+    }
+
+    return result;
   }
   /**
    * Formats the part of the date specified
@@ -3008,7 +3023,7 @@ export default class DateHelper {
     }
 
     const formatOptions = DateTimeFormattingOptions.fromDatePart(partOptions);
-    let dateTimeFormatOption = undefined;;
+    let dateTimeFormatOption = undefined;
     if (formatOptions.valid) {
       dateTimeFormatOption = formatOptions.toDateTimeFormatOptions();
     }
@@ -3018,7 +3033,8 @@ export default class DateHelper {
       partOptions.type === "millisecond"
         ? "fractionalSecond"
         : partOptions.type;
-    let optionName = partType;
+    let optionName =
+      partType === "fractionalSecond" ? "fractionalSecondDigits" : partType;
     let option = partOptions[optionName];
     const resolvedOptions = formatter.resolvedOptions();
     let resolvedOption = resolvedOptions[optionName];
@@ -3049,7 +3065,7 @@ export default class DateHelper {
       // While the code above might fix the problem in v8 & SpiderMonkey,
       // I have doubts about JavaScriptCore so I'm leaving this in.
       if (resolvedOption === "numeric" && option === "2-digit") {
-        value = `00${value}`.slice(-2);
+        value = value.padStart(2, "0");
       } else if (resolvedOption === "2-digit" && option === "numeric") {
         value = parseInt(value).toString();
       } else if (
@@ -3127,9 +3143,9 @@ export default class DateHelper {
       if (part.type === "month") {
         partValue = +partValue - 1;
       }
-        if (part.type === "year" && +partValue < 2000) {
-            debugger;
-        }
+      if (part.type === "year" && +partValue < 2000) {
+        debugger;
+      }
       if (!part.setter) {
         Logger.error(
           `Could not find a setter for the part ${JSON.stringify(
@@ -3202,15 +3218,23 @@ export default class DateHelper {
       .slice(part.index, part.end)
       .replace(/[^\p{L}\p{N}]/gu, "");
     if (makesSense && part.type === "year") {
-      if (Array.isArray(options.locale) && options.locale.every((locale) => !locale.includes('calendar'))) {
+      if (
+        Array.isArray(options.locale) &&
+        options.locale.every((locale) => !locale.includes("calendar"))
+      ) {
         makesSense = makesSense && +partValue > 1800;
       }
-      if (typeof options.locale === "string" && !options.locale.includes("calendar")) {
+      if (
+        typeof options.locale === "string" &&
+        !options.locale.includes("calendar")
+      ) {
         makesSense = makesSense && +partValue > 1800;
       }
       while (!makesSense) {
         part.length += 1;
-        makesSense = !/[^\p{L}\p{N}]/gu.test(value.slice(part.index, part.end)) && +value.slice(part.index, part.end) > 1800;
+        makesSense =
+          !/[^\p{L}\p{N}]/gu.test(value.slice(part.index, part.end)) &&
+          +value.slice(part.index, part.end) > 1800;
       }
       partValue = value
         .slice(part.index, part.end)
@@ -3331,6 +3355,7 @@ export default class DateHelper {
    * @returns {string|number|undefined} The Gregorian year
    */
   static #getGregorianYearFromJapaneseEraAndYear(value, parts, options) {
+    this.#validatePartsAndSetEnds(parts);
     const eraPart = parts.getByType("era");
     const eraLength = eraPart.length;
     eraPart.length = DateHelper.#japaneseEraInfo[eraPart.field]?.length ?? 0;
@@ -3505,7 +3530,9 @@ export default class DateHelper {
           `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the year ${yearPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the year ${yearPartSetResult.value}`
+        );
       }
     }
     const monthPart = parts.getByType("month");
@@ -3539,7 +3566,9 @@ export default class DateHelper {
           );
         }
       } else {
-        Logger.log(`Parsed "${value}" to get the month ${monthPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the month ${monthPartSetResult.value}`
+        );
       }
     }
     const dayPart = parts.getByType("day");
@@ -3559,7 +3588,9 @@ export default class DateHelper {
           `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the day ${dayPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the day ${dayPartSetResult.value}`
+        );
       }
     }
     const hourPart = parts.getByType("hour");
@@ -3579,7 +3610,9 @@ export default class DateHelper {
           `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the hour ${hourPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the hour ${hourPartSetResult.value}`
+        );
       }
     }
     const minutePart = parts.getByType("minute");
@@ -3599,7 +3632,9 @@ export default class DateHelper {
           `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the minute ${minutePartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the minute ${minutePartSetResult.value}`
+        );
       }
     }
     const secondPart = parts.getByType("second");
@@ -3619,7 +3654,9 @@ export default class DateHelper {
           `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the second ${secondPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the second ${secondPartSetResult.value}`
+        );
       }
     }
     const millisecondPart = parts.getByType("fractionalSecondDigits");
@@ -3639,7 +3676,9 @@ export default class DateHelper {
           `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`
         );
       } else {
-        Logger.log(`Parsed "${value}" to get the millisecond ${millisecondPartSetResult.value}`);
+        Logger.log(
+          `Parsed "${value}" to get the millisecond ${millisecondPartSetResult.value}`
+        );
       }
     }
     return date;
@@ -3688,7 +3727,9 @@ export default class DateHelper {
       }
       const date = DateHelper.#getDateFromParts(value, formatParts, options);
       if (date instanceof Date && !isNaN(date.valueOf())) {
-        console.log(`parsing "${value}" using "${formatUsed}", got "${date.toISOString()}"`);
+        console.log(
+          `parsing "${value}" using "${formatUsed}", got "${date.toISOString()}"`
+        );
         const attempt = formatAttempts.find((f) => f.format === formatUsed);
         if (attempt) {
           attempt.success = true;

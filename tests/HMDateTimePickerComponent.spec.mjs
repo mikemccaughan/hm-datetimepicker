@@ -1,6 +1,5 @@
 import { LogLevel, DateCache, HMDateTimePicker } from '../HMDateTimePickerComponent.mjs';
 import { Assert } from './DescribeAssert.mjs';
-import {HTMLElement} from ''
 
 function runTests() {
     try {

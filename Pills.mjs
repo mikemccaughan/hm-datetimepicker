@@ -15,30 +15,58 @@ export class Pill extends BaseComponent {
   constructor() {
     super("hm-pill", LogLevel.Trace);
   }
+  /**
+   * Gets or sets the container of this pill.
+   * @returns {PillContainer} The container of this pill.
+   */
   get container() {
     return this.#container;
   }
+  /**
+   * Gets or sets the container of this pill.
+   * @param {PillContainer} value The container of this pill.
+   */
   set container(value) {
     if (this.#container !== value) {
       this.#container = value;
     }
   }
+  /**
+   * Gets or sets the index of this pill.
+   * @returns {number} The index of this pill.
+   */
   get index() {
     return this.#index;
   }
+  /**
+   * Gets or sets the index of this pill.
+   * @param {number} value The index of this pill.
+   */
   set index(value) {
     if (this.#index !== value) {
       this.#index = value;
     }
   }
+  /**
+   * Gets or sets the value of this pill.
+   * @returns {string} The value of this pill.
+   */
   get value() {
     return this.#value;
   }
+  /**
+   * Gets or sets the value of this pill.
+   * @param {string} value The value of this pill.
+   */
   set value(value) {
     if (this.#value !== value) {
       this.#value = value;
     }
   }
+  /**
+   * Renders the pill inside the given wrapper element.
+   * @param {HTMLElement} wrapper The wrapper element to render the pill into.
+   */
   render(wrapper) {
     this.#wrapper = wrapper;
     const existingValueSpan = this.#wrapper.querySelector(
@@ -62,6 +90,10 @@ export class Pill extends BaseComponent {
     this.#span.appendChild(this.#deleteButton);
     this.#wrapper.appendChild(this.#span);
   }
+  /**
+   * 
+   * @param {boolean} isRerenderOrEvent true to rerender the pill, false if delete() was called by an internal event
+   */
   delete(isRerenderOrEvent = false) {
     const isRerender =
       typeof isRerenderOrEvent === "boolean" ? isRerenderOrEvent : false;
@@ -83,28 +115,36 @@ export class Pill extends BaseComponent {
     }
   }
 }
+/**
+ * Define the custom element for Pill
+ */
 customElements.define("hm-pill", Pill);
 
+
+/**
+ * Define the custom element for PillContainer
+ */
 export class PillContainer extends BaseComponent {
   #id = undefined;
   #instanceId = 0;
-  #labelElement = undefined;
-  #labelText = undefined;
-  #inputElement = undefined;
+  #labelElement = this.#labelElement ?? document.createElement("label");
+  #labelText = '';
+  #inputElement = undefined ?? document.createElement("input");
   #hasSelect = false;
-  #selectElement = undefined;
-  #selectSource = undefined;
-  #boundParse = undefined;
-  #boundSelect = undefined;
-  #wrapper = undefined;
+  #selectElement = this.#selectElement ?? document.createElement("span");
+  #selectSource = '';
+  #boundParse = this.parsePills.bind(this);
+  #boundSelect = this.selectPill.bind(this);
+  #wrapper = this.#wrapper ?? document.createElement("span");
   #pills = undefined;
   #value = undefined;
   static delimiter = " ";
   constructor(logLevel = LogLevel.Trace) {
     super("hm-pill-container", logLevel);
     this.doOrDoNot(function () {
-      this.#instanceId =
-        performance && performance.now ? performance.now() : Date.now();
+      this.#instanceId = performance?.now ? 
+        performance.now() : 
+        Date.now();
       this.#instanceId = this.#instanceId.toString().replaceAll(/\D/g, "");
       this.logLevel <= LogLevel.Log &&
         console.time(`constructor for instance ${this.#instanceId}`);
@@ -196,19 +236,35 @@ export class PillContainer extends BaseComponent {
   adoptedCallback() {
     // Currently no-op
   }
+  /**
+   * Gets or sets the ID of the PillContainer.
+   * @returns {string} The ID of the PillContainer.
+   */
   get id() {
     return this.#id ?? (this.#id = this.shadowRoot.id);
   }
+  /**
+   * Gets or sets the ID of the PillContainer.
+   * @param {string} value The ID of the PillContainer.
+   */
   set id(value) {
     if (this.#id !== value) {
       this.#id = value;
       this.shadowRoot.id = value;
     }
   }
+  /**
+   * Gets or sets the value of the PillContainer.
+   * @returns {string} The value of the PillContainer.
+   */
   get value() {
     this.#value = this.#inputElement?.value ?? this.#value;
     return this.#value;
   }
+  /**
+   * Gets or sets the value of the PillContainer.
+   * @param {string} value The value of the PillContainer.
+   */
   set value(value) {
     if (
       this.#value !== value ||
@@ -223,6 +279,10 @@ export class PillContainer extends BaseComponent {
       }
     }
   }
+  /**
+   * Gets a map of attributes to properties for the PillContainer.
+   * @returns {Map<string, {getter: Function, setter: Function}>} The map of attributes to properties.
+   */
   static get attributeToPropertyMap() {
     return new Map([
       [
@@ -493,9 +553,8 @@ export class PillContainer extends BaseComponent {
   }
   selectPill() {
     const newValue = this.#selectElement.value;
-    this.value += `${PillContainer.delimiter}${newValue}${
-      PillContainer.delimiter
-    }`;
+    this.value += `${PillContainer.delimiter}${newValue}${PillContainer.delimiter
+      }`;
     this.parsePills();
   }
   get boundSelect() {

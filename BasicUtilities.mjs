@@ -268,4 +268,7 @@ export default class BasicUtilities {
   static isNUEmpty(value) {
     return value == null || (typeof value === 'string' && value.length === 0);
   }
+  static isNU(value) {
+    return typeof value === 'undefined' || value === null;
+  }
 }
