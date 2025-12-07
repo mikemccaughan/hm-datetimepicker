@@ -228,6 +228,7 @@ export class DateCache {
  * | --hm-date-time-picker-footer-button-submit-color | The color property for the submit button in the footer | black | |
  */
 export class HMDateTimePicker extends HTMLElement {
+  #value = null;
   #format = undefined;
   #lang = undefined;
   #timeZone = undefined;
@@ -559,6 +560,38 @@ div.picker-footer {
 
       this.#logLevel <= LogLevel.Log &&
         console.timeEnd(`constructor for instance ${this.instanceId}`);
+    } catch (err) {
+      const errorEvent = new Event("error", {
+        message: err.message,
+        filename: err.filename,
+        lineno: err.lineno,
+        colno: err.colno,
+        error: err,
+      });
+      if (this.dispatchEventAndReport("hm-dtp-error", errorEvent, err)) {
+        throw err;
+      }
+    }
+  }
+  /**
+   * Gets the current value of the picker as a Date object (or undefined if not parseable).
+   * Sets the current value of the picker as a Date object or formatted string.
+   * @type {Date|string|undefined}
+   */
+  get value() {
+    return this.#value;
+  }
+  set value(value) {
+    try {
+      if (this.#value !== value) {
+        if (typeof value === "undefined" || value === null || typeof value === "string" && !value.length) {
+          this.#value = new Date();
+          this.inputElement.value = DateHelper.formatDate(this.#value, this.dateHelperOptions);
+          return;
+        }
+        this.#value = DateHelper.parseDate(value);
+        this.inputElement.value = DateHelper.formatDate(this.#value, this.dateHelperOptions);
+      }
     } catch (err) {
       const errorEvent = new Event("error", {
         message: err.message,
@@ -1123,6 +1156,10 @@ div.picker-footer {
   parseInputValue() {
     try {
       const val = this.inputElement.value;
+      /**
+       * @type {Date|undefined}
+       * The parsed Date value of this control, or undefined if unparseable/invalid.
+       */
       this.value = this.parseDate(val, this.defaultDate);
       this.setSelectedValue();
     } catch (err) {
@@ -2851,8 +2888,18 @@ div.picker-footer {
       this.yearEntry = this.panelElement.querySelector(".year-entry");
       this.monthEntry = this.panelElement.querySelector(".month-entry");
       this.closePanel();
-      this.defaultDate = this.parseDate(defaultDate);
-      if (isNaN(this.defaultDate.valueOf())) {
+      if (defaultDate) {
+        if (typeof defaultDate === "function") {
+          defaultDate = defaultDate();
+        } else if (
+          typeof defaultDate === "string" ||
+          typeof defaultDate === "number" ||
+          defaultDate instanceof Date
+        ) {
+          this.defaultDate = this.parseDate(defaultDate);
+        }
+      }
+      if (isNaN(this.defaultDate?.valueOf())) {
         this.defaultDate = this.getNow();
       }
       this.value = this.parseDate(this.inputElement.value, this.defaultDate);

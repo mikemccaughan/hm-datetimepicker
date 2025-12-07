@@ -25,7 +25,7 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
  * valid IANA time zone name, or 'UTC', or undefined or null to use 'UTC')
  */
 /**
- * @typedef {object} NamesByLocale Caches a list of names for each lcoale for faster lookup
+ * @typedef {object} NamesByLocale Caches a list of names for each locale for faster lookup
  * @property {object} NamesByLocale.<locale> The "locale" (BCP-47 language identifier) by which to cache to array of names
  * @property {string[]} NamesByLocale.<locale>.<width> The "width" (DateTimeFormat identifier) by which to cache to array of names
  * So the values (for month names, e.g.) will be like:
@@ -772,7 +772,7 @@ export default class DateHelper {
       supported: false,
     },
     /**
-     * Formats the day of the week in the mont using the minimum number of digits needed; e.g., 1, 2, 5
+     * Formats the day of the week in the month using the minimum number of digits needed; e.g., 1, 2, 5
      * For example, the second Wednesday in July would be formatted as 2.
      * !! Unsupported !!
      */
@@ -796,7 +796,7 @@ export default class DateHelper {
       supported: false,
     },
     /**
-     * Formats the hour using two digits, on a 24 hour cycle; e.g., 00, 12, 23
+     * Formats the hour using two digits, on a 23 hour cycle; e.g., 00, 12, 23
      */
     HH: {
       hour: "2-digit",
@@ -806,7 +806,7 @@ export default class DateHelper {
       type: "hour",
     },
     /**
-     * Formats the hour using the minimum number of digits needed, on a 24 hour cycle; e.g., 0, 12, 23
+     * Formats the hour using the minimum number of digits needed, on a 23 hour cycle; e.g., 0, 12, 23
      */
     H: {
       hour: "numeric",
@@ -1137,12 +1137,10 @@ export default class DateHelper {
    * @returns {Date} a new Date instance, representing the current date and time in the given time zone.
    */
   static now(options) {
-    const { timeZone } = this.validateOptions(options);
-    const isoFormat = this.formatDate(new Date(), {
-      format: "y-MM-ddTHH:mm:ss.fffZ",
-      timeZone,
-    });
-    return new Date(isoFormat);
+    options = { ...this.validateOptions(options), format: "y-MM-ddTHH:mm:ss.fffZ" };
+    const isoFormat = this.formatDate(new Date(), options);
+    console.log(`now(${JSON.stringify(options)})`,  isoFormat);
+    return this.parseDate(isoFormat, options);
   }
   /**
    * Returns a Date object representing the current date at midnight with the options given.
