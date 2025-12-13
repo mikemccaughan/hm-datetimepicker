@@ -11,6 +11,6 @@
     "serve": "node ./serve.mjs",
     "build": "mkdir -p dist && cp -r *.html dist && cp -r *.js dist && cp -r *.css dist && cp -r *.json dist && cp -r *.mjs dist"
   },
-  "author": "",
+  "author": "Mike McCaughan",
   "license": "ISC"
 }

@@ -2,7 +2,7 @@ import DateHelper, { DateComparisonGranularity } from "./DateHelper.mjs";
 /**
  * Provides an enumeration of the possible granularities by which numbers can be compared.
  */
- export class NumberComparisonGranularity {
+export class NumberComparisonGranularity {
   static Thousands = 1000;
   static Hundreds = 100;
   static Tens = 10;
@@ -17,7 +17,7 @@ import DateHelper, { DateComparisonGranularity } from "./DateHelper.mjs";
 /**
  * Encompasses the arguments to the BasicUtilities.deepEquals function.
  */
- export class DeepEqualityArgs {
+export class DeepEqualityArgs {
   /**
    * Validates the order of the elements in the two arrays. Defaults to false.
    */

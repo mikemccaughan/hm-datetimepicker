@@ -35,6 +35,8 @@ export default class TokenList {
     }
     return new Set(tokens);
   }
+  /** @type {Set<string>} */
+  list = new Set();
   /**
    * Initializes a TokenList to the specified value, or just an empty list.
    * @param {undefined|null|TokenList|string[]|string} value The value to initialize the TokenList with.
@@ -113,12 +115,17 @@ export default class TokenList {
    * @param {string} newToken The token to add in oldToken's place.
    */
   replace(oldToken, newToken) {
-    // Sets are great when you don't need to do anything with them involving indexes...
-    var tokens = [oldToken, newToken];
-    this.#validateValues(tokens);
-    var newArray = [...this.list];
-    newArray.splice(newArray.indexOf(oldToken), 1, newToken);
-    this.list = new Set(newArray);
+    try {
+      // Sets are great when you don't need to do anything with them involving indexes...
+      var tokens = [oldToken, newToken];
+      this.#validateValues(tokens);
+      var newArray = [...this.list];
+      newArray.splice(newArray.indexOf(oldToken), 1, newToken);
+      this.list = new Set(newArray);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
   /**
    * Checks if the token is "in the associated attribute's supported tokens". Since this
@@ -158,25 +165,25 @@ export default class TokenList {
     }
   }
   /**
-   * Gets a new iterator object of the array of `[token, token]` for each token in the list.
-   * @returns An iterator object that contains an array of `[token, token]` for each token in the list.
-   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/entries
+   * Gets a new iterator object of the array of `[index, token]` for each token in the list.
+   * @returns An iterator object that contains an array of `[index, token]` for each token in the list.
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList/entries
    */
   entries() {
     // Sets are great when you don't need to do anything with them involving indexes...
-    return [...this.list.entries()].map(([k,v], i) => [i, v])[Symbol.iterator];
+    return [...this.list].entries();
   }
   /**
    * Executes a function once for each value in the TokenList, in insertion order
    * @param {function} callback A function to execute, taking three arguments:
-   * @param {string} callback.value The value of the token being processed
-   * @param {string} callback.key The key of the token being processed (same as the `value`)
-   * @param {string} callback.set The Set of all tokens in the list
-   * @param {any} thisArg The value to use as `this` when executing `callback`
+   * @param {string} callback.currentValue The value of the token being processed
+   * @param {string} callback.currentIndex The index of the token being processed
+   * @param {string} callback.listObj The array of all tokens in the list
+   * @param {any} thisArg (optional) The value to use as `this` when executing `callback`
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/forEach
    */
   forEach(callback, thisArg) {
-    this.list.forEach(callback, thisArg);
+    [...this.list].forEach(callback, thisArg);
   }
   /**
    * The keys() method of the TokenList interface returns an iterator allowing to go through all keys 
@@ -185,7 +192,7 @@ export default class TokenList {
    */
   keys() {
     // Sets are great when you don't need to do anything with them involving indexes...
-    return Object.keys([...this.list]).map(Number)[Symbol.iterator];
+    return [...this.list].keys();
   }
   /**
    * Returns a new Iterator object that contains the values for each token in the TokenList object in insertion order.
@@ -193,6 +200,20 @@ export default class TokenList {
    * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set/values
    */
   values() {
-    return this.list.values();
+    return [...this.list].values();
+  }
+  /**
+   * Outputs a space-separated string of tokens, same as the `value` property.
+   * @returns A space-separated list of tokens contained in the list. 
+   */
+  toString() {
+    return this.value;
+  }
+  /**
+   * Outputs a space-separated string of tokens, same as the `value` property.
+   * @returns A space-separated list of tokens contained in the list. 
+   */
+  toJSON() {
+    return this.value;
   }
 }
