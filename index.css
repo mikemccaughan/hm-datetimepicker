@@ -8,8 +8,8 @@
   position: absolute;
   left: 1rem;
   top: 2rem;
-  width: 18rem;
-  height: 255px;
+  min-width: 18rem;
+  height: fit-content;
   border: 1px solid #e0e0e0;
   padding: 0.5rem 1rem;
 }
@@ -68,6 +68,10 @@
   font-size: 13.3333px;
   border-width: 1px;
   padding: 1px 6px;
+}
+.date-picker.calendar-entry button.month-prev-utc, 
+.date-picker.calendar-entry button.month-next-utc {
+    white-space: nowrap;
 }
 .date-picker.calendar-entry .calendar-entry select {
   height: unset;

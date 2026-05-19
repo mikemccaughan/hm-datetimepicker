@@ -2,6 +2,14 @@ import { createServer } from 'node:http';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 
+/**
+ * Writes a file to the HTTP response.
+ * @param {Response} res The HTTP response object.
+ * @param {string} fileName The path to the file to read.
+ * @param {string} mimeType The MIME type of the file.
+ * @param {string} encoding The encoding of the file.
+ * @returns {void}
+ */
 function writeFileToResponse(res, fileName, mimeType, encoding) {
     try {
         let options = {};
@@ -34,9 +42,15 @@ const getFileNameFromUrl = (url) => {
     );
 }
 
+/**
+ * Creates an HTTP server that serves files based on the request URL. The server listens on port 4321.
+ * The server determines the file to serve based on the request URL and serves it with the appropriate MIME type. 
+ * If the file is not found, it responds with a 404 status code.
+ * @returns {HttpServer} The created HTTP server instance.
+ */
 const server = createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    let fileName = getFileNameFromUrl(url);
+    let fileName = '/' + getFileNameFromUrl(url);
     let ext = path.extname(url.pathname);
     const isFileNameRequest = ext !== '';
     if (isFileNameRequest) {
@@ -56,15 +70,17 @@ const server = createServer((req, res) => {
                 writeFileToResponse(res, fileName, 'application/json;charset=utf-8', 'utf-8');
                 break;
             default:
-                fileName = getFileNameFromUrl(url);
+                fileName = '/' + getFileNameFromUrl(url);
                 writeFileToResponse(res, fileName, 'text/html;charset=utf-8', 'utf-8');
         }
     } else {
-        console.log(`basepath: ${import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', '')}`);
-        console.log(`pathname: ${(url.pathname?.replace(/\/$/, '')?.length ?? 0) ? url.pathname.replace(/\/$/, '') : 'index.html'}`);
-        fileName = getFileNameFromUrl(url);
+        console.log(`basepath: /${import.meta.url.replace(/^file:\/\/\//, '').replace('serve.mjs', '')}`);
+        console.log(`pathname: /${(url.pathname?.replace(/\/$/, '')?.length ?? 0) ? url.pathname.replace(/\/$/, '') : 'index.html'}`);
+        fileName = '/' + getFileNameFromUrl(url);
+        console.log(`fileName: ${fileName}`);
         writeFileToResponse(res, fileName, 'text/html;charset=utf-8', 'utf-8');
     }
 });
-server.listen(4321);
-console.log(`Listening on http://localhost:4321/`);
+server.
+
+console.log(`Listening on http://localhost:${port}/`);
