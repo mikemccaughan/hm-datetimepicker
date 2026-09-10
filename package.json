@@ -9,8 +9,10 @@
   "scripts": {
     "test": "node --test",
     "serve": "node ./serve.mjs",
-    "build": "mkdir -p dist && cp -r *.html dist && cp -r *.js dist && cp -r *.css dist && cp -r *.json dist && cp -r *.mjs dist"
+    "build": "rm -r dist && mkdir dist && cd dist && mkdir fn-date-time && cd .. && npm run build:copy",
+    "build:copy": "cp -r *.html dist && cp -r *.js dist && cp -r *.css dist && cp -r *.json dist && cp -r *.mjs dist && cp -r README.md dist && cp -r Web.config dist && rm dist/package*.json && cp -r ./fn-date-time/*.mjs dist/fn-date-time"
   },
   "author": "Mike McCaughan",
-  "license": "ISC"
+  "license": "ISC",
+  "packageManager": "yarn@4.18.0"
 }

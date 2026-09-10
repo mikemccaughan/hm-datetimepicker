@@ -448,6 +448,17 @@ test("BasicUtilities", async (t) => {
     });
   });
   await test("diffDates", async (t) => {
+    /**
+     * Runs a test of the diffDates function with the given parameters.
+     * @param {import("node:test").TestContext} t Text to print if test fails
+     * @param {Date} a The first date of the comparison
+     * @param {Date} b The second date of the comparison
+     * @param {DateComparisonGranularity} granularity The granularity of the comparison
+     * @param {number} custom The expected value of the function
+     * @param {number} amount The expected amount of the difference
+     * @param {string} unit The expected unit of the difference
+     * @param {string} text The text to print if the test fails
+     */
     async function testDiffDates(
       t,
       a,
@@ -458,18 +469,19 @@ test("BasicUtilities", async (t) => {
       unit,
       text
     ) {
+      const customResult = typeof custom === "function" ? custom(a, b) : undefined;
       await t.test(
         `${text}: ("${a?.toISOString()}", "${b?.toISOString()}", should return ${amount} ${unit})`,
         (t) => {
           assert.deepEqual(
             { amount, unit },
-            DateHelper.diffDates(a, b, granularity, custom)
+            DateHelper.diffDates(a, b, granularity, customResult)
           );
         }
       );
     }
-    let a = new Date(2021, 6, 15, 0, 0, 0, 0);
-    let b = new Date(2022, 6, 15, 0, 0, 0, 0);
+    let a = new Date(Date.UTC(2021, 6, 15, 0, 0, 0, 0));
+    let b = new Date(Date.UTC(2022, 6, 15, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
@@ -480,8 +492,8 @@ test("BasicUtilities", async (t) => {
       DateComparisonGranularity.Millisecond,
       "default is the same as DateComparisonGranularity.Millisecond returns the number of milliseconds between two dates"
     );
-    a = new Date(2021, 6, 15, 0, 0, 0, 0);
-    b = new Date(2022, 6, 15, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 6, 15, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2022, 6, 15, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
@@ -492,8 +504,8 @@ test("BasicUtilities", async (t) => {
       DateComparisonGranularity.Second,
       "DateComparisonGranularity.Second returns the number of seconds between two dates"
     );
-    a = new Date(2021, 6, 15, 0, 0, 0, 0);
-    b = new Date(2022, 6, 15, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 6, 15, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2022, 6, 15, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
@@ -504,8 +516,8 @@ test("BasicUtilities", async (t) => {
       DateComparisonGranularity.Year,
       "DateComparisonGranularity.Year returns the number of years between two dates"
     );
-    a = new Date(2020, 0, 1, 0, 0, 0, 0);
-    b = new Date(2022, 0, 1, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2020, 0, 1, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2022, 0, 1, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
@@ -516,8 +528,8 @@ test("BasicUtilities", async (t) => {
       DateComparisonGranularity.Year,
       `DateComparisonGranularity.Year returns the number of years between two dates, for leap years`
     );
-    a = new Date(2021, 6, 1, 12, 30, 30, 50);
-    b = new Date(2022, 0, 1, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 6, 1, 12, 30, 30, 50));
+    b = new Date(Date.UTC(2022, 0, 1, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
@@ -528,44 +540,44 @@ test("BasicUtilities", async (t) => {
       DateComparisonGranularity.Year,
       "DateComparisonGranularity.Year returns the number of partial years between two dates"
     );
-    a = new Date(2021, 0, 1, 0, 0, 0, 0);
-    b = new Date(2021, 6, 1, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 0, 1, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2021, 6, 1, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
       b,
       DateComparisonGranularity.Month,
-      undefined,
+      (a, b) => DateHelper.diffDates(a, b, DateComparisonGranularity.Month),
       6,
       DateComparisonGranularity.Month,
       "DateComparisonGranularity.Month returns the number of months between two dates"
     );
-    a = new Date(2021, 1, 1, 0, 0, 0, 0);
-    b = new Date(2021, 1, 15, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 1, 1, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2021, 1, 15, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
       b,
       DateComparisonGranularity.Month,
-      undefined,
+      (a, b) => DateHelper.diffDates(a, b, DateComparisonGranularity.Month),
       0.5,
       DateComparisonGranularity.Month,
       "DateComparisonGranularity.Month returns the partial number of months between two dates"
     );
-    a = new Date(2021, 0, 1, 0, 0, 0, 0);
-    b = new Date(2021, 6, 1, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 0, 1, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2021, 6, 1, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,
       b,
       DateComparisonGranularity.Quarter,
-      undefined,
+      (a, b) => DateHelper.diffDates(a, b, DateComparisonGranularity.Quarter),
       2,
       DateComparisonGranularity.Quarter,
       "DateComparisonGranularity.Quarter returns the number of months between two dates divided by three"
     );
-    a = new Date(2021, 6, 1, 0, 0, 0, 0);
-    b = new Date(2021, 0, 1, 0, 0, 0, 0);
+    a = new Date(Date.UTC(2021, 6, 1, 0, 0, 0, 0));
+    b = new Date(Date.UTC(2021, 0, 1, 0, 0, 0, 0));
     await testDiffDates(
       t,
       a,

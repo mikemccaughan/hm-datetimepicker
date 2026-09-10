@@ -251,12 +251,28 @@ export default class BasicUtilities {
       return a.name === b.name && a.toString() === b.toString();
     }
   }
+  /**
+   * Converts the first letter of a string to upper case and the rest to lower case.
+   * @param {string} value The variable to inspect, copy, and alter.
+   * @returns The `value`, with the first letter in upper case and subsequent letters in lower case.
+   */
   static firstCapital(value) {
     return typeof value === 'string' && (value.length < 2 ? value.toUpperCase() : `${value[0].toUpperCase()}${value.slice(1).toLowerCase()}`);
   }
+  /**
+   * Converts a string to title case.
+   * @param {string} value The variable to inspect, copy, and alter.
+   * @returns The `value`, with every word in it set to have its initial letter in upper case and subsequent letters in lower case.
+   */
   static titleCase(value) {
-    return typeof value === 'string' && value.replace(/\b\w\b/g, (word) => `${word[0].toUpperCase()}${word.slice(1).toLowerCase()}`);
+    return typeof value === 'string' && value.replace(/\b\w\b/g, (word) => BasicUtilities.firstCapital(word));
   }
+  /**
+   * Parses a boolean value from a string or other type.
+   * @param {string | unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is a string and one of 'true', 'yes', 'y', or '1' when set to lower case, or if `value` is of any other type,
+   * and applying `!!` to it returns true; otherwise, false.
+   */
   static parseBoolean(value) {
     if (typeof value === 'string') {
       // array of common 'true' values; more nuanced than any string = true.
@@ -265,10 +281,60 @@ export default class BasicUtilities {
       return !!value;
     }
   }
+  /**
+   * Checks if the given value is null, undefined, or an empty string or array.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is null, undefined, or an empty string or array.
+   */
   static isNUEmpty(value) {
-    return value == null || (typeof value === 'string' && value.length === 0);
+    return BasicUtilities.isNU(value) || (typeof value === 'string' && value.length === 0) || (Array.isArray(value) && value.length === 0);
   }
+  /**
+   * Checks if the given value is null or undefined.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is null or undefined.
+   */
   static isNU(value) {
     return typeof value === 'undefined' || value === null;
+  }
+  /**
+   * Checks if the given value is a string with content.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is a string with a positive `length`.
+   */
+  static isStringWithContent(value) { 
+    return !BasicUtilities.isNUEmpty(value) && typeof value === 'string' && value.length > 0;
+  }
+  /**
+   * Checks if the given value is an array with a positive length.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is an array with a positive `length`.
+   */
+  static isArrayWithContent(value) { 
+    return !BasicUtilities.isNUEmpty(value) && Array.isArray(value) && value.length > 0;
+  }
+  /**
+   * Checks if the given value is a number or a string that can be converted to a number.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is a number or a string that can be converted to a number.
+   */
+  static isNumeric(value) {
+    return !BasicUtilities.isNUEmpty(value) && !isNaN(parseFloat(value)) && isFinite(value);
+  }
+  /**
+   * Checks if the given value is a number.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is a number.
+   */
+  static isNumber(value) {
+    return !BasicUtilities.isNUEmpty(value) && typeof value === 'number' && isFinite(value);
+  }
+  /**
+   * Checks if the given value is a valid Date object.
+   * @param {unknown | null | undefined} value The variable to inspect.
+   * @returns true if `value` is a valid Date object.
+   */
+  static isValidDate(value) {
+    return !BasicUtilities.isNUEmpty(value) && value instanceof Date && !isNaN(value.valueOf());
   }
 }

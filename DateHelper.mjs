@@ -25,8 +25,8 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
  * valid IANA time zone name, or 'UTC', or undefined or null to use 'UTC')
  */
 /**
- * @typedef {object} NamesByLocale Caches a list of names for each locale for faster lookup
- * @property {object} NamesByLocale.<locale> The "locale" (BCP-47 language identifier) by which to cache to array of names
+ * @typedef {Record<string, Record<string, string[]>>} NamesByLocale Caches a list of names for each locale for faster lookup
+ * @property {Record<string, string[]>} NamesByLocale.<locale> The "locale" (BCP-47 language identifier) by which to cache to array of names
  * @property {string[]} NamesByLocale.<locale>.<width> The "width" (DateTimeFormat identifier) by which to cache to array of names
  * So the values (for month names, e.g.) will be like:
  * {
@@ -59,10 +59,10 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
  * @property {string|undefined|null} error a string, containing the errors that have occurred, if any
  */
 /**
- * @typedef {(date, value, useUTC = true) => void} DatePartSetter Sets the year portion of the date to the given value
- * @param {Date} date The Date whose year portion will be set
- * @param {number} value The value to which to set the year
- * @param {boolean?} useUTC true (default) to use UTC method to set the year; otherwise will use local date method.
+ * @typedef {(date, value, useUTC = true) => void} DatePartSetter Sets a portion of the date to the given value
+ * @param {Date} date The Date whose portion will be set
+ * @param {number} value The value to which to set the portion of the date
+ * @param {boolean?} useUTC true (default) to use UTC method to set the portion; otherwise will use local date method.
  * @returns {void}
  */
 /**
@@ -135,7 +135,8 @@ export default class DateHelper {
    * be matched by GGGG, and it would use the "long" version of the era plus an extra G in the
    * output, instead of the "narrow" version of the era).
    * Note: There are a large number of format strings that are unused. These are mostly sourced
-   * from Unicode's CLDR
+   * from Unicode's CLDR.
+   * @type {Record<string, Intl.DateTimeFormatOptions>}
    */
   static stringsToFormatMap = {
     /**
@@ -285,7 +286,7 @@ export default class DateHelper {
       type: "year",
     },
     /**
-     * Formats the year using "a singe number designating the year of this calendar system, encompassing all supra-year fields."
+     * Formats the year using "a single number designating the year of this calendar system, encompassing all supra-year fields."
      * From Unicode TR35 (not sure this is available via Intl)
      * !! Unsupported !!
      */
@@ -493,7 +494,8 @@ export default class DateHelper {
     /**
      * For use when formatted without other date parts. Use M forms for foratting with other parts.
      * See https://unicode.org/reports/tr35/tr35-dates.html#months_days_quarters_eras
-     * Formats the month name in a "narrow" format; e.g., J, M, D (note that two months can share a narrow name; March is also formatted as M)
+     * Formats the month name in a "narrow" format; e.g., J, M, D (note that two months can share a narrow name; 
+     * March and May are both formatted as M)
      * !! Unsupported !!
      */
     LLLLL: {
@@ -945,6 +947,7 @@ export default class DateHelper {
     },
     /**
      * Formats the time zone used for formatting using a "long" format (implementation-dependent); e.g., Pacific Standard Time, Coordinated Universal Time
+     * !! Unsupported outside of supporting browsers !!
      */
     zzzz: {
       timeZoneName: "long",
@@ -953,6 +956,7 @@ export default class DateHelper {
     },
     /**
      * Formats the time zone used for formatting using a "short" format (implementation-dependent); e.g., PST, GMT-8, UTC
+     * !! Unsupported outside of supporting browsers !!
      */
     zzz: {
       timeZoneName: "short",
@@ -1064,6 +1068,7 @@ export default class DateHelper {
    * such strings, or undefined or null (to use the locale's default format)
    * @param timeZone The time zone in which to format the date (must be a valid IANA time zone name, or
    * 'UTC', or undefined or null to use 'UTC')
+   * @param logLevel The level of logging to use for this instance (defaults to LogLevel.Error)
    */
   constructor(locales, formats, timeZone, logLevel = LogLevel.Error) {
     this.locales = locales;
@@ -1139,7 +1144,9 @@ export default class DateHelper {
   static now(options) {
     options = { ...this.validateOptions(options), format: "y-MM-ddTHH:mm:ss.fffZ" };
     const isoFormat = this.formatDate(new Date(), options);
-    console.log(`now(${JSON.stringify(options)})`,  isoFormat);
+    if (Logger.LogLevel <= LogLevel.Trace) {
+      console.log(`now(${JSON.stringify(options)})`,  isoFormat);
+    }
     return this.parseDate(isoFormat, options);
   }
   /**
@@ -1157,7 +1164,7 @@ export default class DateHelper {
       format: "iso",
       timeZone,
     });
-    return new Date(isoFormat);
+    return this.parseDate(isoFormat, options);
   }
   /**
    * Maps a date unit to a method that adds an amount of that unit to a value.
@@ -1169,104 +1176,122 @@ export default class DateHelper {
      * @param {Date} date The Date to whose year portion the value will be added
      * @param {number} amount The amount to add to the year
      * @param {boolean?} useUTC true (default) to use UTC method to set the year; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new year value (not the full date)
      */
-    y: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCFullYear(value.getUTCFullYear() + amount)
-        : value.setFullYear(value.getFullYear() + amount),
+    y: (date, amount, useUTC = true) =>
+    (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCFullYear(date.getUTCFullYear() + amount)
+        : (typeof date === "object" || date instanceof Date) ? 
+            date.setFullYear(date.getFullYear() + amount) : undefined,
     /**
      * Adds the given amount of quarters to the month portion of the date
      * @param {Date} date The Date to whose month portion the value will be added
      * @param {number} amount The amount of quarters to add to the month
      * @param {boolean?} useUTC true (default) to use UTC method to set the month; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new month value (not the full date)
      */
-    q: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCMonth(value.getUTCMonth() + amount * 3)
-        : value.setMonth(value.getMonth() + amount * 3),
+    q: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMonth(date.getUTCMonth() + amount * 3)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMonth(date.getMonth() + amount * 3) 
+          : undefined),
     /**
      * Adds the given amount to the month portion of the date
      * @param {Date} date The Date to whose month portion the value will be added
      * @param {number} amount The amount to add to the month
      * @param {boolean?} useUTC true (default) to use UTC method to set the month; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new month value (not the full date)
      */
-    M: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCMonth(value.getUTCMonth() + amount)
-        : value.setMonth(value.getMonth() + amount),
+    M: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMonth(date.getUTCMonth() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMonth(date.getMonth() + amount) 
+          : undefined),
     /**
      * Adds the given amount to the day portion of the date
      * @param {Date} date The Date to whose day portion the value will be added
      * @param {number} amount The amount to add to the day
      * @param {boolean?} useUTC true (default) to use UTC method to set the day; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new day value (not the full date)
      */
-    d: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCDate(value.getUTCDate() + amount)
-        : value.setDate(value.getDate() + amount),
+    d: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCDate(date.getUTCDate() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setDate(date.getDate() + amount) 
+          : undefined),
     /**
      * Adds the given amount of weeks to the day portion of the date
      * @param {Date} date The Date to whose day portion the value will be added
      * @param {number} amount The amount of weeks to add to the day
      * @param {boolean?} useUTC true (default) to use UTC method to set the day; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new day value (not the full date)
      */
-    w: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCDate(value.getUTCDate() + amount * 7)
-        : value.setDate(value.getDate() + amount * 7),
+    w: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCDate(date.getUTCDate() + amount * 7)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setDate(date.getDate() + amount * 7) 
+          : undefined),
     /**
      * Adds the given amount to the hour portion of the date
      * @param {Date} date The Date to whose hour portion the value will be added
      * @param {number} amount The amount to add to the hour
      * @param {boolean?} useUTC true (default) to use UTC method to set the hour; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new hour value (not the full date)
      */
-    H: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCHours(value.getUTCHours() + amount)
-        : value.setHours(value.getHours() + amount),
+    H: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCHours(date.getUTCHours() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setHours(date.getHours() + amount) 
+          : undefined),
     /**
      * Adds the given amount to the minute portion of the date
      * @param {Date} date The Date to whose minute portion the value will be added
      * @param {number} amount The amount to add to the minute
      * @param {boolean?} useUTC true (default) to use UTC method to set the minute; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new minute value (not the full date)
      */
-    m: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCMinutes(value.getUTCMinutes() + amount)
-        : value.setMinutes(value.getMinutes() + amount),
+    m: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMinutes(date.getUTCMinutes() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMinutes(date.getMinutes() + amount) 
+          : undefined),
     /**
      * Adds the given amount to the second portion of the date
      * @param {Date} date The Date to whose second portion the value will be added
      * @param {number} amount The amount to add to the second
      * @param {boolean?} useUTC true (default) to use UTC method to set the second; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new second value (not the full date)
      */
-    s: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCSeconds(value.getUTCSeconds() + amount)
-        : value.setSeconds(value.getSeconds() + amount),
+    s: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCSeconds(date.getUTCSeconds() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setSeconds(date.getSeconds() + amount) 
+          : undefined),
     /**
      * Adds the given amount to the millisecond portion of the date
      * @param {Date} date The Date to whose millisecond portion the value will be added
      * @param {number} amount The amount to add to the millisecond
      * @param {boolean?} useUTC true (default) to use UTC method to set the millisecond; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new millisecond value (not the full date)
      */
-    f: (value, amount, useUTC = true) =>
-      useUTC
-        ? value.setUTCMilliseconds(value.getUTCMilliseconds() + amount)
-        : value.setMilliseconds(value.getMilliseconds() + amount),
+    f: (date, amount, useUTC = true) =>
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMilliseconds(date.getUTCMilliseconds() + amount)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMilliseconds(date.getMilliseconds() + amount) 
+          : undefined),
   };
   /**
    * Maps a date unit to a method that sets that unit on a Date to a value.
    * Defaults to using UTC methods to do so.
+   * @type {Record<string, (date: Date, value: number, useUTC?: boolean) => number>}
    */
   static unitToSetter = {
     /**
@@ -1274,64 +1299,92 @@ export default class DateHelper {
      * @param {Date} date The Date whose year portion will be set
      * @param {number} value The value to which to set the year
      * @param {boolean?} useUTC true (default) to use UTC method to set the year; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new year value (not the full date)
      */
     y: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCFullYear(value) : date.setFullYear(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCFullYear(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setFullYear(value) 
+          : undefined),
     /**
      * Sets the month portion of the date to the given value
      * @param {Date} date The Date whose month portion will be set
      * @param {number} value The value to which to set the month (0 = January, 11 = December)
      * @param {boolean?} useUTC true (default) to use UTC method to set the month; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new month value (not the full date)
      */
     M: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCMonth(value) : date.setMonth(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMonth(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMonth(value) 
+          : undefined),
     /**
      * Sets the day portion of the date to the given value
      * @param {Date} date The Date whose day portion will be set
      * @param {number} value The value to which to set the day
      * @param {boolean?} useUTC true (default) to use UTC method to set the day; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new day value (not the full date)
      */
     d: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCDate(value) : date.setDate(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCDate(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setDate(value) 
+          : undefined),
     /**
      * Sets the hour portion of the date to the given value
      * @param {Date} date The Date whose hour portion will be set
      * @param {number} value The value to which to set the hour
      * @param {boolean?} useUTC true (default) to use UTC method to set the hour; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new hour value (not the full date)
      */
     H: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCHours(value) : date.setHours(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCHours(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setHours(value) 
+          : undefined),
     /**
      * Sets the minute portion of the date to the given value
      * @param {Date} date The Date whose minute portion will be set
      * @param {number} value The value to which to set the minute
      * @param {boolean?} useUTC true (default) to use UTC method to set the minute; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new minute value (not the full date)
      */
     m: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCMinutes(value) : date.setMinutes(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMinutes(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMinutes(value) 
+          : undefined),
     /**
      * Sets the second portion of the date to the given value
      * @param {Date} date The Date whose second portion will be set
      * @param {number} value The value to which to set the second
      * @param {boolean?} useUTC true (default) to use UTC method to set the second; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new second value (not the full date)
      */
     s: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCSeconds(value) : date.setSeconds(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCSeconds(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setSeconds(value) 
+          : undefined),
     /**
      * Sets the millisecond portion of the date to the given value
      * @param {Date} date The Date whose millisecond portion will be set
      * @param {number} value The value to which to set the millisecond
      * @param {boolean?} useUTC true (default) to use UTC method to set the millisecond; otherwise will use local date method.
-     * @returns {void}
+     * @returns {number} The new millisecond value (not the full date)
      */
     f: (date, value, useUTC = true) =>
-      useUTC ? date.setUTCMilliseconds(value) : date.setMilliseconds(value),
+      (typeof date === "object" || date instanceof Date) && useUTC
+        ? date.setUTCMilliseconds(value)
+        : ((typeof date === "object" || date instanceof Date) 
+          ? date.setMilliseconds(value) 
+          : undefined),
   };
   /**
    * Adds a given amount of a unit to a Date.
@@ -1348,7 +1401,7 @@ export default class DateHelper {
   static add(value, amount, unit, useUTC = true) {
     if (!Object.keys(this.unitToAdder).includes(unit)) {
       Logger.warn(
-        `unit passed to DateHelper.add was not in the list; "${unit}" is not one of 'y','q','M','w','d','H','m','s','f'.`
+        `unit passed to DateHelper.add was not in the list; "${unit}" is not one of 'y','q','M','w','d','H','m','s','f'. Returning original value.`
       );
       return value;
     }
@@ -1900,7 +1953,7 @@ export default class DateHelper {
   /**
    * Uses basic heuristics to get better formatting information, based on the results
    * of formatting the date using some defaults.
-   * @param {DatePart} part The part of the date to guess more infomration about
+   * @param {DatePart} part The part of the date to guess more information about
    * @returns {DatePart} A more fleshed out object with more formatting information
    */
   static #guessDatePartFromFormatPart(part) {
@@ -2316,12 +2369,18 @@ export default class DateHelper {
     return isLeap(numericYear);
   }
   /**
+   * @typedef {{amount: number, unit: string}} DateDiffResult
+   */
+  /**
+   * @typedef {(Date a, Date b) => DateDiffResult} DateDiffFunction
+   */
+  /**
    * Gets the differences between two date objects.
-   * @param {Date} a The first date to compare
-   * @param {Date} b The second date to compare
-   * @param {DateComparisonGranularity} dateGranularity The granularity at which to compare the dates
-   * @param {(Date a, Date b) => {amount: number, unit: string})} dateGranularityCustom A custom function by which to compare the dates
-   * @returns {amount: number, unit: string} An object containing the amount and unit by which the two values differ
+   * @param {Date} a - The first date to compare
+   * @param {Date} b - The second date to compare
+   * @param {DateComparisonGranularity} dateGranularity - The granularity at which to compare the dates
+   * @param {DateDiffFunction} dateGranularityCustom - A custom function by which to compare the dates
+   * @returns {DateDiffResult} An object containing the amount and unit by which the two values differ
    */
   static diffDates(
     a,
@@ -2333,9 +2392,14 @@ export default class DateHelper {
     })
   ) {
     const diff = Math.abs(b.valueOf() - a.valueOf());
+    const customResult = typeof dateGranularityCustom === "function" ? 
+        dateGranularityCustom(a, b) : 
+        typeof dateGranularityCustom === "object" && dateGranularityCustom !== null ? 
+            dateGranularityCustom : 
+            null;
     switch (dateGranularity) {
       case DateComparisonGranularity.Custom:
-        return dateGranularityCustom(a, b);
+        return customResult;
       case DateComparisonGranularity.Millisecond:
         return { amount: diff, unit: DateComparisonGranularity.Millisecond };
       case DateComparisonGranularity.Second:
@@ -2756,7 +2820,8 @@ export default class DateHelper {
   static isBeforeDay(a, b) {
     return (
       a.getFullYear() < b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && a.getMonth() < b.getMonth()) ||
+      (a.getFullYear() === b.getFullYear() && 
+        a.getMonth() < b.getMonth()) ||
       (a.getFullYear() === b.getFullYear() &&
         a.getMonth() === b.getMonth() &&
         a.getDate() < b.getDate())
@@ -2782,7 +2847,8 @@ export default class DateHelper {
   static isAfterDay(a, b) {
     return (
       a.getFullYear() > b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && a.getMonth() > b.getMonth()) ||
+      (a.getFullYear() === b.getFullYear() && 
+        a.getMonth() > b.getMonth()) ||
       (a.getFullYear() === b.getFullYear() &&
         a.getMonth() === b.getMonth() &&
         a.getDate() > b.getDate())

@@ -584,8 +584,8 @@ div.picker-footer {
   set value(value) {
     try {
       if (this.#value !== value) {
-        if (typeof value === "undefined" || value === null || typeof value === "string" && !value.length) {
-          this.#value = new Date();
+        if (!BasicUtilities.isStringWithContent(value)) {
+          this.#value = this.getNow();
           this.inputElement.value = DateHelper.formatDate(this.#value, this.dateHelperOptions);
           return;
         }
@@ -604,6 +604,13 @@ div.picker-footer {
         throw err;
       }
     }
+  }
+  /**
+   * Gets the current value of the picker as a Date object.
+   * @returns {Date|undefined} The current value of the picker as a Date object, or undefined if not parseable.
+   */
+  get valueAsDate() {
+    return DateHelper.parseDate(this.#value);
   }
   /**
    * Gets or sets the format or formats for this picker.
@@ -767,6 +774,44 @@ div.picker-footer {
    * Gets an object from the attributes of the element
    * @param {HTMLElement} element The element from which to create an object.
    * @returns {object} A hash of the attributes of the element.
+   * @returns {string} return.inputClassName The class name(s) to be added to the input element.
+   * @returns {string} return.inputId The id to be added to the input element.
+   * @returns {string} return.labelClassName The class name(s) to be added to the label element.
+   * @returns {string} return.labelId The id to be added to the label element.
+   * @returns {string} return.panelElementName The tag name of the element to be used as the panel for the calendar. Should be a child of the HMDateTimePicker element.
+   * @returns {string} return.panelElementClassName The class name(s) to be added to the panel element.
+   * @returns {boolean} return.useUTC Whether to use UTC for the calendar or not.
+   * @returns {string} return.defaultDate The default date to be shown when the calendar is opened with no value.
+   * @returns {string} return.format The format(s) to be used for parsing and formatting dates.
+   * @returns {string} return.minDate The minimum date that can be selected.
+   * @returns {string} return.maxDate The maximum date that can be selected.
+   * @returns {string} return.disableDate The date or dates that cannot be selected.
+   * @returns {boolean} return.useYearAndMonthTabs Whether to use tabs for selecting year and month in the calendar entry or not.
+   * @returns {boolean} return.useYearAndMonthSelects Whether to use selects for selecting year and month in the calendar entry or not.
+   * @returns {TokenList} return.showOn The properties with which to show the calendar panel.
+   * @returns {string} return.buttonHtml The HTML to be used for the button that opens the calendar panel.
+   * @returns {string} return.buttonIcon The icon to be used for the button that opens the calendar panel. Can be used as an alternative to buttonHtml.
+   * @returns {string} return.buttonIconClassName The class name(s) to be added to the icon used for the button that opens the calendar panel. Only used if buttonIcon is provided.
+   * @return {string} return.title The title to be shown at the top of the calendar panel.
+   * @return {number} return.weekStartsOn The day of the week on which the calendar should start, represented as a number from 0 to 6 (0 for Sunday, 1 for Monday, etc.).
+   * @return {string} return.ttDateFormat The format to be used for the tooltip that shows the full date when hovering over a date in the calendar entry.
+   * @return {string} return.ttTabsButtonFormat The format to be used for the tooltip that shows the full date when hovering over the buttons used to switch between year and month selection in the calendar entry when useYearAndMonthTabs is true.
+   * @return {string} return.ttPrevButtonFormat The format to be used for the tooltip that shows the full date when hovering over the button used to navigate to the previous month in the calendar entry.
+   * @return {string} return.ttNextButtonFormat The format to be used for the tooltip that shows the full date when hovering over the button used to navigate to the next month in the calendar entry.
+   * @return {string} return.tabsButtonFormat The format to be used for the text shown on the buttons used to switch between year and month selection in the calendar entry when useYearAndMonthTabs is true.
+   * @return {string} return.prevText The text to be shown on the button used to navigate to the previous month in the calendar entry.
+   * @return {string} return.prevHtml The HTML to be shown on the button used to navigate to the previous month in the calendar entry. Can be used as an alternative to prevText.
+   * @return {string} return.nextText The text to be shown on the button used to navigate to the next month in the calendar entry.
+   * @return {string} return.nextHtml The HTML to be shown on the button used to navigate to the next month in the calendar entry. Can be used as an alternative to nextText.
+   * @return {boolean} return.showManualEntry Whether to show the option for manual entry of dates in the calendar entry or not.
+   * @return {boolean} return.allowManualEntry Whether to allow manual entry of dates in the calendar entry or not.
+   * @return {boolean} return.closePanelOnDateSelect Whether to close the calendar panel when a date is selected in the calendar entry or not.
+   * @return {boolean} return.closePanelOnTimeSelect Whether to close the calendar panel when a time is selected in the calendar entry or not.
+   * @return {string} return.lang The language code to be used for the calendar entry.
+   * @return {string} return.timeZone The IANA time zone code to be used for the calendar entry.
+   * @return {boolean} return.showAllMonths Whether to show all months in the month selection view of the calendar entry or only the months for the currently selected year.
+   * @return {boolean} return.showAllYears Whether to show all years in the year selection view of the calendar entry or only a range of years around the currently selected year.
+   * 
    */
   createDataset(element) {
     try {
@@ -837,8 +882,8 @@ div.picker-footer {
         title: element.getAttribute("title"),
         weekStartsOn: this.parseWeekday(
           element.getAttribute("week-start") ??
-            element.getAttribute("week-starts-on") ??
-            element.getAttribute("weekStartsOn")
+          element.getAttribute("week-starts-on") ??
+          element.getAttribute("weekStartsOn")
         ),
         ttDateFormat:
           element.getAttribute("ttDateFormat") ??
@@ -860,13 +905,25 @@ div.picker-footer {
           element.getAttribute("prev-text") ??
           element.getAttribute("prev"),
         prevHtml:
-          element.getAttribute("prevHtml") ?? element.getAttribute("prev-html"),
+          element.getAttribute("prevHtml") ?? 
+          element.getAttribute("prev-html") ??
+          `<strong>${
+            element.getAttribute("prevText") ??
+            element.getAttribute("prev-text") ??
+            element.getAttribute("prev")
+          }</strong>`,
         nextText:
           element.getAttribute("nextText") ??
           element.getAttribute("next-text") ??
           element.getAttribute("next"),
         nextHtml:
-          element.getAttribute("nextHtml") ?? element.getAttribute("next-html"),
+          element.getAttribute("nextHtml") ?? 
+          element.getAttribute("next-html") ??
+          `<strong>${
+            element.getAttribute("nextText") ??
+            element.getAttribute("next-text") ??
+            element.getAttribute("next")
+          }</strong>`,
         showManualEntry:
           element.getAttribute("showManualEntry") ??
           element.getAttribute("show-manual-entry") ??
@@ -894,7 +951,7 @@ div.picker-footer {
           element.getAttribute("show-all"),
         showAllYears:
           element.getAttribute("showAllYears") ??
-          element.getAttribute("show-all-yYears") ??
+          element.getAttribute("show-all-years") ??
           element.getAttribute("show-all"),
       };
     } catch (err) {
@@ -917,10 +974,10 @@ div.picker-footer {
    */
   parseWeekday(value) {
     try {
-      if (value == null) {
+      if (!BasicUtilities.isStringWithContent(String(value)) || !BasicUtilities.isNumeric(value)) {
         return value;
       }
-      if (isNaN(parseInt(value))) {
+      if (BasicUtilities.isStringWithContent(value)) {
         switch (value[0].toUpperCase() + value.slice(1).toLowerCase()) {
           case "Monday":
           case "Mon":
@@ -955,8 +1012,10 @@ div.picker-footer {
           default:
             return 0;
         }
-      } else {
+      } else if (BasicUtilities.isNumeric(value)) {
         return parseInt(value, 10);
+      } else {
+        throw new Error(`Invalid weekday value: ${value}`);
       }
     } catch (err) {
       const errorEvent = new Event("error", {
@@ -1057,7 +1116,7 @@ div.picker-footer {
         }
       }
       if (typeof value === "undefined") {
-        returnValue = defaultValue
+        returnValue = !BasicUtilities.isNUEmpty(defaultValue)
           ? this.parseDate(defaultValue)
           : DateHelper.now(this.dateHelperOptions);
       }
@@ -1070,7 +1129,7 @@ div.picker-footer {
         // First try a relative date value
         if (RelativeDateParser.canParse(value)) {
           returnValue = RelativeDateParser.parse(value, new Date(), this.useUTC);
-        } else if (value.trim().length === 0) {
+        } else if (BasicUtilities.isStringWithContent(value) || BasicUtilities.isArrayWithContent(format)) {
           format = Array.isArray(format) ? format : [format];
           while (format.some((f) => Array.isArray(f))) {
             format = format.flat();
@@ -2400,9 +2459,13 @@ div.picker-footer {
    * Initializes the control.
    */
   init() {
+    // Builds the elements of the control, sets up event handlers, and initializes variables based on attributes.
     try {
       this.#logLevel <= LogLevel.Log && console.time("init");
       this.boundEventHandlers = new WeakMap();
+      // Create a number of variables based on the attributes of the element, for ease of use
+      // (and to avoid having to access the attributes repeatedly). These variables are all strings, 
+      // as they are based on HTML attributes, and will be parsed as needed.
       let {
         inputClassName,
         inputId,
@@ -2455,9 +2518,13 @@ div.picker-footer {
       }
 
       // Time zone should be singular
-      this.timeZone = this.useUTC
-        ? "UTC"
-        : DateHelper.getProbableClientTimeZoneName();
+      if (this.useUTC) {
+        this.timeZone = "UTC";
+      } else if (BasicUtilities.isStringWithContent(timeZone)) {
+        this.timeZone = timeZone;
+      } else {
+        this.timeZone = DateHelper.getProbableClientTimeZoneName();
+      }
 
       if (Array.isArray(format)) {
         this.format = Array.from(format);
