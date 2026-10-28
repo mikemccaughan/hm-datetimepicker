@@ -1,4 +1,4 @@
-import { TimeSpan } from './TimeSpan.mjs';
+import { TimeSpan } from "./TimeSpan.mjs";
 /**
  * Provides an enumeration of the types of cache expiration.
  */
@@ -30,7 +30,9 @@ export class CacheExpiration {
     this.isRunning = true;
     this.beganAt = new Date();
     // default 1 hour expiration
-    this.expiresAt = new Date(new Date(this.beganAt.valueOf()).setHours(this.beganAt.getHours() + 1));
+    this.expiresAt = new Date(
+      new Date(this.beganAt.valueOf()).setHours(this.beganAt.getHours() + 1),
+    );
     if (this.type === CacheExpirationType.Absolute) {
       // If the expiration is absolute, then the time of expiration is the specified time.
       if (this.expiration && this.expiration.valueOf() > 0) {
@@ -44,7 +46,10 @@ export class CacheExpiration {
       }
     }
     this.elapsed = TimeSpan.fromSubtractingTwoDates(this.beganAt, this.expiresAt);
-    this.expirationCheck = setTimeout(this.checkExpiration.bind(this), this.expiresAt.valueOf() - this.beganAt.valueOf());
+    this.expirationCheck = setTimeout(
+      this.checkExpiration.bind(this),
+      this.expiresAt.valueOf() - this.beganAt.valueOf(),
+    );
   }
   /**
    * Resets the expiration process if the expiration type is sliding.
@@ -60,7 +65,10 @@ export class CacheExpiration {
    */
   checkExpiration() {
     if (this.expiresAt instanceof Date && !Number.isNaN(this.expiresAt.valueOf())) {
-      if (TimeSpan.fromSubtractingTwoDates(this.beganAt, Date.now()).totalMilliseconds >= this.elapsed.totalMilliseconds) {
+      if (
+        TimeSpan.fromSubtractingTwoDates(this.beganAt, Date.now()).totalMilliseconds >=
+        this.elapsed.totalMilliseconds
+      ) {
         this.stop();
         this.onExpired();
       }
@@ -79,15 +87,12 @@ export class Cache {
    */
   static InfiniteAbsoluteExpiration = new CacheExpiration(
     CacheExpirationType.Absolute,
-    new Date(0)
+    new Date(0),
   );
   /**
    * Causes cache entries to never expire, on a sliding expiration basis.
    */
-  static NoSlidingExpiration = new CacheExpiration(
-    CacheExpirationType.Sliding,
-    TimeSpan.Zero
-  );
+  static NoSlidingExpiration = new CacheExpiration(CacheExpirationType.Sliding, TimeSpan.Zero);
   /**
    * Initializes a new instance of the Cache class with the specified expiration policy.
    * @param {CacheExpiration} expiration The expiration rule to use for items in this Cache.
@@ -95,7 +100,8 @@ export class Cache {
    */
   constructor(expiration, onExpiration) {
     this.expiration = expiration;
-    this.#entries = new Map();0
+    this.#entries = new Map();
+    0;
     if (typeof onExpiration === "function") {
       this.#onExpired = this.expiration.onExpired = onExpiration;
     }
@@ -153,7 +159,7 @@ export class Cache {
  * Manages the creation of Caches in an application.
  */
 export default class CacheManager {
-  static #token = Symbol('ctor');
+  static #token = Symbol("ctor");
   static instance;
   static lastId = -1;
   static caches;
@@ -172,7 +178,7 @@ export default class CacheManager {
    */
   constructor(token) {
     if (token !== CacheManager.#token) {
-      throw new Error('Use Create() to get an instance of CacheManager');
+      throw new Error("Use Create() to get an instance of CacheManager");
     }
   }
   /**
@@ -182,7 +188,9 @@ export default class CacheManager {
    */
   static CreateCache(expiration) {
     const id = CacheManager.lastId++;
-    const cache = new Cache(expiration, () => { CacheManager.caches.delete(id); });
+    const cache = new Cache(expiration, () => {
+      CacheManager.caches.delete(id);
+    });
     CacheManager.caches.set(id, cache);
     return cache;
   }

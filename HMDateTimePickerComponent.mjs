@@ -9,15 +9,14 @@ import MemoryStorage from "./MemoryStorage.mjs";
  * in a given year (allDatesInYear) or year and month (allDatesInMonth).
  */
 export class DateCache {
-  static #isoRe = /^\d{4}\-\d{2}\-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-  static #jsonReviver = (key, value) =>
-    this.#isoRe.test(value) ? new Date(value) : value;
+  static #isoRe = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+  static #jsonReviver = (key, value) => (this.#isoRe.test(value) ? new Date(value) : value);
   static #allDatesInYearKey = "allDatesInYear";
   static get allDatesInYear() {
     const storedValue = this.#store.getItem(this.#allDatesInYearKey);
     return typeof storedValue === "string"
       ? JSON.parse(storedValue, this.#jsonReviver)
-      : storedValue ?? {};
+      : (storedValue ?? {});
   }
   static set allDatesInYear(value) {
     if (value != null) {
@@ -35,7 +34,7 @@ export class DateCache {
     const storedValue = this.#store.getItem(this.#allDatesInMonthKey);
     return typeof storedValue === "string"
       ? JSON.parse(storedValue, this.#jsonReviver)
-      : storedValue ?? {};
+      : (storedValue ?? {});
   }
   static set allDatesInMonth(value) {
     if (value != null) {
@@ -53,10 +52,7 @@ export class DateCache {
     return this.#store;
   }
   static set store(value) {
-    if (
-      typeof value === "object" &&
-      (value instanceof Storage || value instanceof MemoryStorage)
-    ) {
+    if (typeof value === "object" && (value instanceof Storage || value instanceof MemoryStorage)) {
       this.#store = value;
     }
   }
@@ -238,8 +234,7 @@ export class HMDateTimePicker extends HTMLElement {
     this.#logLevel = logLevel;
     try {
       this.instanceId = Date.now();
-      this.#logLevel <= LogLevel.Log &&
-        console.time(`constructor for instance ${this.instanceId}`);
+      this.#logLevel <= LogLevel.Log && console.time(`constructor for instance ${this.instanceId}`);
 
       this.attachShadow({ mode: "open" });
 
@@ -681,11 +676,7 @@ div.picker-footer {
   }
   set timeZone(value) {
     try {
-      if (
-        this.#timeZone !== value &&
-        typeof value === "string" &&
-        value.length
-      ) {
+      if (this.#timeZone !== value && typeof value === "string" && value.length) {
         const timeZoneResult = DateHelper.parseTimeZone(value);
         if (timeZoneResult.valid) {
           this.#timeZone = timeZoneResult.value;
@@ -766,9 +757,7 @@ div.picker-footer {
    * Gets a NodeList of the buttons used for selecting a specific date, whether they are disabled or not.
    */
   get dateButtons() {
-    return this.panelElement.querySelectorAll(
-      "button.calendar-entry-body-date"
-    );
+    return this.panelElement.querySelectorAll("button.calendar-entry-body-date");
   }
   /**
    * Gets an object from the attributes of the element
@@ -811,23 +800,17 @@ div.picker-footer {
    * @return {string} return.timeZone The IANA time zone code to be used for the calendar entry.
    * @return {boolean} return.showAllMonths Whether to show all months in the month selection view of the calendar entry or only the months for the currently selected year.
    * @return {boolean} return.showAllYears Whether to show all years in the year selection view of the calendar entry or only a range of years around the currently selected year.
-   * 
+   *
    */
   createDataset(element) {
     try {
       return {
         inputClassName:
-          element.getAttribute("input-class-name") ??
-          element.getAttribute("inputClassName") ??
-          "",
-        inputId:
-          element.getAttribute("input-id") ?? element.getAttribute("inputId"),
+          element.getAttribute("input-class-name") ?? element.getAttribute("inputClassName") ?? "",
+        inputId: element.getAttribute("input-id") ?? element.getAttribute("inputId"),
         labelClassName:
-          element.getAttribute("label-class-name") ??
-          element.getAttribute("labelClassName") ??
-          "",
-        labelId:
-          element.getAttribute("label-id") ?? element.getAttribute("labelId"),
+          element.getAttribute("label-class-name") ?? element.getAttribute("labelClassName") ?? "",
+        labelId: element.getAttribute("label-id") ?? element.getAttribute("labelId"),
         panelElementName:
           element.getAttribute("panel-element-name") ??
           element.getAttribute("panelElementName") ??
@@ -842,9 +825,7 @@ div.picker-footer {
           element.getAttribute("use-utc") ??
           element.getAttribute("useUtc") ??
           element.getAttribute("useUTC"),
-        defaultDate:
-          element.getAttribute("default-date") ??
-          element.getAttribute("defaultDate"),
+        defaultDate: element.getAttribute("default-date") ?? element.getAttribute("defaultDate"),
         format: element.getAttribute("format"),
         minDate:
           element.getAttribute("min") ??
@@ -866,28 +847,22 @@ div.picker-footer {
           element.getAttribute("use-selects") ??
           element.getAttribute("use-year-and-month-selects") ??
           element.getAttribute("useYearAndMonthSelects"),
-        showOn: new TokenList(
-          element.getAttribute("show-on") ?? element.getAttribute("showOn")
-        ),
+        showOn: new TokenList(element.getAttribute("show-on") ?? element.getAttribute("showOn")),
         buttonHtml:
           element.getAttribute("button-html") ??
           element.getAttribute("buttonHtml") ??
           element.getAttribute("buttonHTML"),
-        buttonIcon:
-          element.getAttribute("button-icon") ??
-          element.getAttribute("buttonIcon"),
+        buttonIcon: element.getAttribute("button-icon") ?? element.getAttribute("buttonIcon"),
         buttonIconClassName:
-          element.getAttribute("button-icon-class") ??
-          element.getAttribute("buttonIconClassName"),
+          element.getAttribute("button-icon-class") ?? element.getAttribute("buttonIconClassName"),
         title: element.getAttribute("title"),
         weekStartsOn: this.parseWeekday(
           element.getAttribute("week-start") ??
-          element.getAttribute("week-starts-on") ??
-          element.getAttribute("weekStartsOn")
+            element.getAttribute("week-starts-on") ??
+            element.getAttribute("weekStartsOn"),
         ),
         ttDateFormat:
-          element.getAttribute("ttDateFormat") ??
-          element.getAttribute("tt-date-format"),
+          element.getAttribute("ttDateFormat") ?? element.getAttribute("tt-date-format"),
         ttTabsButtonFormat:
           element.getAttribute("ttTabsButtonFormat") ??
           element.getAttribute("tt-tabs-button-format"),
@@ -898,14 +873,13 @@ div.picker-footer {
           element.getAttribute("ttNextButtonFormat") ??
           element.getAttribute("tt-next-button-format"),
         tabsButtonFormat:
-          element.getAttribute("tabsButtonFormat") ??
-          element.getAttribute("tabs-button-format"),
+          element.getAttribute("tabsButtonFormat") ?? element.getAttribute("tabs-button-format"),
         prevText:
           element.getAttribute("prevText") ??
           element.getAttribute("prev-text") ??
           element.getAttribute("prev"),
         prevHtml:
-          element.getAttribute("prevHtml") ?? 
+          element.getAttribute("prevHtml") ??
           element.getAttribute("prev-html") ??
           `<strong>${
             element.getAttribute("prevText") ??
@@ -917,7 +891,7 @@ div.picker-footer {
           element.getAttribute("next-text") ??
           element.getAttribute("next"),
         nextHtml:
-          element.getAttribute("nextHtml") ?? 
+          element.getAttribute("nextHtml") ??
           element.getAttribute("next-html") ??
           `<strong>${
             element.getAttribute("nextText") ??
@@ -1049,7 +1023,7 @@ div.picker-footer {
               value.getUTCHours(),
               value.getUTCMinutes(),
               value.getUTCSeconds(),
-              value.getUTCMilliseconds()
+              value.getUTCMilliseconds(),
             )
           : value
         : new Date(value.valueOf());
@@ -1129,7 +1103,10 @@ div.picker-footer {
         // First try a relative date value
         if (RelativeDateParser.canParse(value)) {
           returnValue = RelativeDateParser.parse(value, new Date(), this.useUTC);
-        } else if (BasicUtilities.isStringWithContent(value) || BasicUtilities.isArrayWithContent(format)) {
+        } else if (
+          BasicUtilities.isStringWithContent(value) ||
+          BasicUtilities.isArrayWithContent(format)
+        ) {
           format = Array.isArray(format) ? format : [format];
           while (format.some((f) => Array.isArray(f))) {
             format = format.flat();
@@ -1169,8 +1146,7 @@ div.picker-footer {
       this.pickerInputElement.value = formatted;
       if (this.useYearAndMonthTabs) {
         const myFormatted = this.monthYearFormatter.format(val);
-        this.monthYearSelector.querySelector(".selected").textContent =
-          myFormatted;
+        this.monthYearSelector.querySelector(".selected").textContent = myFormatted;
       }
     } catch (err) {
       const errorEvent = new Event("error", {
@@ -1285,9 +1261,7 @@ div.picker-footer {
         const buttonLabel = this.monthYearFormatter.format(monthDate);
         const buttonText = this.monthShortFormatter.format(monthDate);
         const isoDate = this.isoFormatter.format(monthDate);
-        let monthButton = this.monthEntry.querySelector(
-          `button[data-date="${isoDate}"]`
-        );
+        let monthButton = this.monthEntry.querySelector(`button[data-date="${isoDate}"]`);
         if (monthButton == null) {
           monthButton = document.createElement("button");
           monthButton.setAttribute("type", "button");
@@ -1298,10 +1272,8 @@ div.picker-footer {
         this.clearDataset(monthButton);
         monthButton.dataset.date = isoDate;
         monthButton.dataset.isToday =
-          monthDate.getFullYear() ===
-            DateHelper.now(this.dateHelperOptions).getFullYear() &&
-          monthDate.getMonth() ===
-            DateHelper.now(this.dateHelperOptions).getMonth();
+          monthDate.getFullYear() === DateHelper.now(this.dateHelperOptions).getFullYear() &&
+          monthDate.getMonth() === DateHelper.now(this.dateHelperOptions).getMonth();
         monthButton.dataset.isSelected =
           monthDate.getFullYear() === dateDate.getFullYear() &&
           monthDate.getMonth() === dateDate.getMonth();
@@ -1405,9 +1377,7 @@ div.picker-footer {
       for (let i = minYear; i < maxYear; i++) {
         yearDate.setFullYear(i);
         const buttonLabel = this.yearFormatter.format(yearDate);
-        let yearButton = this.yearEntry.querySelector(
-          `button[title="${buttonLabel}"]`
-        );
+        let yearButton = this.yearEntry.querySelector(`button[title="${buttonLabel}"]`);
         if (yearButton == null) {
           yearButton = document.createElement("button");
           yearButton.setAttribute("type", "button");
@@ -1418,10 +1388,8 @@ div.picker-footer {
         this.clearDataset(yearButton);
         yearButton.dataset.date = this.isoFormatter.format(yearDate);
         yearButton.dataset.isToday =
-          yearDate.getFullYear() ===
-          DateHelper.now(this.dateHelperOptions).getFullYear();
-        yearButton.dataset.isSelected =
-          yearDate.getFullYear() === dateDate.getFullYear();
+          yearDate.getFullYear() === DateHelper.now(this.dateHelperOptions).getFullYear();
+        yearButton.dataset.isSelected = yearDate.getFullYear() === dateDate.getFullYear();
         yearButton.textContent = yearDate.getFullYear();
         const allDatesInYear = this.calculateAllDatesInYear(yearDate);
         yearButton.disabled = this.allDatesAreDisabled(allDatesInYear);
@@ -1505,7 +1473,7 @@ div.picker-footer {
     try {
       if (!el || !el.dataset) {
         throw new Error(
-          `Argument must be an HTMLOrForeignElement that has a dataset property, got ${typeof el}`
+          `Argument must be an HTMLOrForeignElement that has a dataset property, got ${typeof el}`,
         );
       }
       for (let key in el.dataset) {
@@ -1532,9 +1500,7 @@ div.picker-footer {
       this.#logLevel <= LogLevel.Log && console.time("populateDates");
       const dateDate = new Date(this.value);
       const startDate = DateHelper.getFirstSunday(dateDate);
-      const calendarElement = this.panelElement.querySelector(
-        ".calendar-entry-body"
-      );
+      const calendarElement = this.panelElement.querySelector(".calendar-entry-body");
       for (let i = 0; i < 42; i++) {
         if (!this.dateButtons || this.dateButtons.length <= i) {
           let newDateButton = document.createElement("button");
@@ -1551,17 +1517,16 @@ div.picker-footer {
           dateDate.getHours(),
           dateDate.getMinutes(),
           dateDate.getSeconds(),
-          dateDate.getMilliseconds()
+          dateDate.getMilliseconds(),
         );
         const button = this.dateButtons[i];
         button.setAttribute("title", this.dateFormatter.format(buttonDate));
         this.clearDataset(button);
         button.dataset.date = this.isoFormatter.format(buttonDate);
-        button.dataset.dateOther =
-          buttonDate.getMonth() !== dateDate.getMonth();
+        button.dataset.dateOther = buttonDate.getMonth() !== dateDate.getMonth();
         button.dataset.isToday = DateHelper.isSameDay(
           buttonDate,
-          DateHelper.now(this.dateHelperOptions)
+          DateHelper.now(this.dateHelperOptions),
         );
         button.dataset.isSelected = DateHelper.isSameDay(buttonDate, dateDate);
         button.setAttribute("aria-current", button.dataset.isSelected);
@@ -1598,12 +1563,8 @@ div.picker-footer {
       }
 
       const last = DateHelper.getLastDateOfMonth(monthDate);
-      const year = this.useUTC
-        ? monthDate.getUTCFullYear()
-        : monthDate.getFullYear();
-      const month = this.useUTC
-        ? monthDate.getUTCMonth()
-        : monthDate.getMonth();
+      const year = this.useUTC ? monthDate.getUTCFullYear() : monthDate.getFullYear();
+      const month = this.useUTC ? monthDate.getUTCMonth() : monthDate.getMonth();
       const allDates = Array.from({
         length: this.useUTC ? last.getUTCDate() : last.getDate(),
       })
@@ -1634,9 +1595,7 @@ div.picker-footer {
    */
   calculateAllDatesInYear(yearDate) {
     try {
-      const year = this.useUTC
-        ? yearDate.getUTCFullYear()
-        : yearDate.getFullYear();
+      const year = this.useUTC ? yearDate.getUTCFullYear() : yearDate.getFullYear();
       const key = year.toString();
       if (DateCache.allDatesInYear.hasOwnProperty(key)) {
         return DateCache.allDatesInYear[key];
@@ -1700,7 +1659,7 @@ div.picker-footer {
       lastMonth = DateHelper.setClosestDayInMonth(
         lastMonth,
         lastMonth.getMonth() - 1,
-        lastMonth.getDate()
+        lastMonth.getDate(),
       );
       const lastMonthDates = this.calculateAllDatesInMonth(lastMonth);
       this.prevMonth.disabled = this.allDatesAreDisabled(lastMonthDates);
@@ -1708,7 +1667,7 @@ div.picker-footer {
       nextMonth = DateHelper.setClosestDayInMonth(
         nextMonth,
         nextMonth.getMonth() + 1,
-        nextMonth.getDate()
+        nextMonth.getDate(),
       );
       const nextMonthDates = this.calculateAllDatesInMonth(nextMonth);
       this.nextMonth.disabled = this.allDatesAreDisabled(nextMonthDates);
@@ -1752,11 +1711,7 @@ div.picker-footer {
    * @returns void
    */
   openPanel() {
-    let proceed = this.dispatchEventAndReport(
-      "hm-dtp-open",
-      undefined,
-      this.value
-    );
+    let proceed = this.dispatchEventAndReport("hm-dtp-open", undefined, this.value);
     if (!proceed) {
       return;
     }
@@ -1783,11 +1738,7 @@ div.picker-footer {
    * @returns void
    */
   closePanel() {
-    let proceed = this.dispatchEventAndReport(
-      "hm-dtp-close",
-      undefined,
-      this.value
-    );
+    let proceed = this.dispatchEventAndReport("hm-dtp-close", undefined, this.value);
     if (!proceed) {
       return;
     }
@@ -1838,10 +1789,7 @@ div.picker-footer {
   keyDown(e) {
     try {
       this.#logLevel <= LogLevel.Log && console.log("keyDown", e.target, e.key);
-      if (
-        e.target.closest("input") == this.inputElement &&
-        e.key === "ArrowDown"
-      ) {
+      if (e.target.closest("input") == this.inputElement && e.key === "ArrowDown") {
         this.parseCurrentText();
         this.openPanel();
       }
@@ -1908,8 +1856,7 @@ div.picker-footer {
    */
   somethingElseGotFocus(e) {
     try {
-      this.#logLevel <= LogLevel.Log &&
-        console.log("somethingElseGotFocus", e.target);
+      this.#logLevel <= LogLevel.Log && console.log("somethingElseGotFocus", e.target);
       if (
         e &&
         e.target &&
@@ -1945,11 +1892,7 @@ div.picker-footer {
     try {
       this.#logLevel <= LogLevel.Log && console.log("dateSelected", e.target);
       const newValue = this.parseButtonDate(e.target.dataset.date);
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-date-select",
-        e,
-        newValue
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-date-select", e, newValue);
       if (!proceed) {
         e.preventDefault();
         return;
@@ -1969,11 +1912,7 @@ div.picker-footer {
         this.datePickerElement.classList.remove("month-entry");
       }
       if (e.target.matches(".calendar-entry-body-date")) {
-        Array.from(
-          e.target.parentElement.querySelectorAll(
-            "button.calendar-entry-body-date"
-          )
-        )
+        Array.from(e.target.parentElement.querySelectorAll("button.calendar-entry-body-date"))
           .filter((button) => button !== e.target)
           .forEach((button) => {
             button.setAttribute("aria-current", "false");
@@ -2006,11 +1945,7 @@ div.picker-footer {
       // If not, subtract days until it is in the desired month
       let desiredMonth = this.value.getMonth() - 1;
       let prevDate = new Date(this.value.valueOf());
-      prevDate = DateHelper.setClosestDayInMonth(
-        prevDate,
-        desiredMonth,
-        this.value.getDate()
-      );
+      prevDate = DateHelper.setClosestDayInMonth(prevDate, desiredMonth, this.value.getDate());
 
       // Make sure that the same selected day in the new month is
       // not disabled. If so, add days until it is on an
@@ -2019,11 +1954,7 @@ div.picker-footer {
         prevDate.setDate(prevDate.getDate() + 1);
       }
 
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-prev-month",
-        e,
-        prevDate
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-prev-month", e, prevDate);
       if (!proceed) {
         e.preventDefault();
         return;
@@ -2061,14 +1992,10 @@ div.picker-footer {
       this.#logLevel <= LogLevel.Log &&
         console.log(`nextClicked | nextDate: ${nextDate.toISOString()}`);
       const prevNextDate = new Date(nextDate.valueOf());
-      nextDate = DateHelper.setClosestDayInMonth(
-        nextDate,
-        desiredMonth,
-        this.value.getDate()
-      );
+      nextDate = DateHelper.setClosestDayInMonth(nextDate, desiredMonth, this.value.getDate());
       this.#logLevel <= LogLevel.Log &&
         console.log(
-          `nextClicked | nextDate (after setClosestDayInMonth("${prevNextDate.toISOString()}", ${desiredMonth}, ${this.value.getDate()})): ${nextDate.toISOString()}`
+          `nextClicked | nextDate (after setClosestDayInMonth("${prevNextDate.toISOString()}", ${desiredMonth}, ${this.value.getDate()})): ${nextDate.toISOString()}`,
         );
 
       // Make sure that the same selected day in the new month is
@@ -2079,14 +2006,10 @@ div.picker-footer {
       }
       this.#logLevel <= LogLevel.Log &&
         console.log(
-          `nextClicked | nextDate (after removal of disabled dates): ${nextDate.toISOString()}`
+          `nextClicked | nextDate (after removal of disabled dates): ${nextDate.toISOString()}`,
         );
 
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-next-month",
-        e,
-        nextDate
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-next-month", e, nextDate);
       if (!proceed) {
         e.preventDefault();
         return;
@@ -2119,13 +2042,9 @@ div.picker-footer {
       let newValue = DateHelper.setClosestDayInMonth(
         this.value,
         +e.target.value,
-        this.value.getDate()
+        this.value.getDate(),
       );
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-month-select",
-        e,
-        newValue
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-month-select", e, newValue);
       if (!proceed) {
         e.preventDefault();
         return;
@@ -2158,13 +2077,9 @@ div.picker-footer {
       let newValue = DateHelper.setClosestDayInYear(
         this.value,
         +e.target.value,
-        this.value.getDate()
+        this.value.getDate(),
       );
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-year-select",
-        e,
-        newValue
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-year-select", e, newValue);
       if (!proceed) {
         e.preventDefault();
         return;
@@ -2192,8 +2107,7 @@ div.picker-footer {
    */
   monthYearClicked(e) {
     try {
-      this.#logLevel <= LogLevel.Log &&
-        console.log("monthYearClicked", e.target);
+      this.#logLevel <= LogLevel.Log && console.log("monthYearClicked", e.target);
       e.preventDefault();
       this.datePickerElement.classList.remove("calendar-entry");
       this.datePickerElement.classList.add("year-entry");
@@ -2275,18 +2189,14 @@ div.picker-footer {
   tabClicked(e) {
     try {
       this.#logLevel <= LogLevel.Log && console.log("tabClicked", e.target);
-      let proceed = this.dispatchEventAndReport(
-        "hm-dtp-tab-select",
-        e,
-        e.target.dataset.tab
-      );
+      let proceed = this.dispatchEventAndReport("hm-dtp-tab-select", e, e.target.dataset.tab);
       if (!proceed) {
         e.preventDefault();
         return;
       }
 
       this.panelElement.classList.remove(
-        e.target.dataset.tab.startsWith("date") ? "time-picker" : "date-picker"
+        e.target.dataset.tab.startsWith("date") ? "time-picker" : "date-picker",
       );
       this.panelElement.classList.add(e.target.dataset.tab);
     } catch (err) {
@@ -2396,20 +2306,13 @@ div.picker-footer {
    */
   mergeBoundHandlers(element, eventName, newBoundHandler) {
     try {
-      const existingBoundHandlers =
-        this.boundEventHandlers.get(element)?.[eventName] ?? [];
+      const existingBoundHandlers = this.boundEventHandlers.get(element)?.[eventName] ?? [];
       existingBoundHandlers.push(newBoundHandler);
       this.boundEventHandlers.set(element, {
         [eventName]: existingBoundHandlers,
-        ["get" + eventName]: this.getBoundEventHandlersAsFunction(
-          element,
-          eventName
-        ),
+        ["get" + eventName]: this.getBoundEventHandlersAsFunction(element, eventName),
       });
-      element.addEventListener(
-        eventName,
-        this.getMergedBoundEventHandlers(element, eventName)
-      );
+      element.addEventListener(eventName, this.getMergedBoundEventHandlers(element, eventName));
     } catch (err) {
       const errorEvent = new Event("error", {
         message: err.message,
@@ -2428,14 +2331,12 @@ div.picker-footer {
    */
   removeBoundHandlers() {
     try {
-      for (let element of this.elements.filter((el) =>
-        this.boundEventHandlers.has(el)
-      )) {
+      for (let element of this.elements.filter((el) => this.boundEventHandlers.has(el))) {
         var handlers = this.boundEventHandlers.get(element);
         for (let eventName in handlers) {
           element.removeEventListener(
             eventName,
-            this.getMergedBoundEventHandlers(element, eventName)
+            this.getMergedBoundEventHandlers(element, eventName),
           );
         }
       }
@@ -2464,7 +2365,7 @@ div.picker-footer {
       this.#logLevel <= LogLevel.Log && console.time("init");
       this.boundEventHandlers = new WeakMap();
       // Create a number of variables based on the attributes of the element, for ease of use
-      // (and to avoid having to access the attributes repeatedly). These variables are all strings, 
+      // (and to avoid having to access the attributes repeatedly). These variables are all strings,
       // as they are based on HTML attributes, and will be parsed as needed.
       let {
         inputClassName,
@@ -2532,10 +2433,7 @@ div.picker-footer {
       if (typeof format === "string") {
         this.format = [format];
       }
-      if (
-        !this.format ||
-        this.format.filter((f) => f && f.length).length === 0
-      ) {
+      if (!this.format || this.format.filter((f) => f && f.length).length === 0) {
         this.format = [DateHelper.getDefaultFormatForLocale(this.lang)];
       }
 
@@ -2548,10 +2446,7 @@ div.picker-footer {
       this.monthKeyFormatter = new Intl.DateTimeFormat("en-US", mmYYformat);
 
       const isoFormatterOptions = { timeZone: "UTC" };
-      this.isoFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        isoFormatterOptions
-      );
+      this.isoFormatter = new Intl.DateTimeFormat(this.lang, isoFormatterOptions);
       Object.defineProperty(this.isoFormatter, "format", {
         value: function (date) {
           return date.toISOString().slice(0, 10);
@@ -2562,80 +2457,55 @@ div.picker-footer {
         year: "numeric",
         timeZone: this.timeZone,
       };
-      this.monthYearFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        monthYearFormatterOptions
-      );
+      this.monthYearFormatter = new Intl.DateTimeFormat(this.lang, monthYearFormatterOptions);
       const monthLongFormatterOptions = {
         month: "long",
         timeZone: this.timeZone,
       };
-      this.monthLongFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        monthLongFormatterOptions
-      );
+      this.monthLongFormatter = new Intl.DateTimeFormat(this.lang, monthLongFormatterOptions);
       const monthShortFormatterOptions = {
         month: "short",
         timeZone: this.timeZone,
       };
-      this.monthShortFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        monthShortFormatterOptions
-      );
+      this.monthShortFormatter = new Intl.DateTimeFormat(this.lang, monthShortFormatterOptions);
       const yearFormatterOptions = {
         year: "numeric",
         timeZone: this.timeZone,
       };
-      this.yearFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        yearFormatterOptions
-      );
+      this.yearFormatter = new Intl.DateTimeFormat(this.lang, yearFormatterOptions);
       const weekdayLongFormatterOptions = {
         weekday: "long",
         timeZone: this.timeZone,
       };
-      this.weekdayLongFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        weekdayLongFormatterOptions
-      );
+      this.weekdayLongFormatter = new Intl.DateTimeFormat(this.lang, weekdayLongFormatterOptions);
       const weekdayShortFormatterOptions = {
         weekday: "short",
         timeZone: this.timeZone,
       };
-      this.weekdayShortFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        weekdayShortFormatterOptions
-      );
+      this.weekdayShortFormatter = new Intl.DateTimeFormat(this.lang, weekdayShortFormatterOptions);
       const weekdayNarrowFormatterOptions = {
         weekday: "narrow",
         timeZone: this.timeZone,
       };
       this.weekdayNarrowFormatter = new Intl.DateTimeFormat(
         this.lang,
-        weekdayNarrowFormatterOptions
+        weekdayNarrowFormatterOptions,
       );
 
       const dateFormatterOptions = {
         dateStyle: "long",
         timeZone: this.timeZone,
       };
-      this.dateFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        dateFormatterOptions
-      );
+      this.dateFormatter = new Intl.DateTimeFormat(this.lang, dateFormatterOptions);
 
       const timeFormatterOptions = {
         timeStyle: "long",
         timeZone: this.timeZone,
       };
-      this.timeFormatter = new Intl.DateTimeFormat(
-        this.lang,
-        timeFormatterOptions
-      );
+      this.timeFormatter = new Intl.DateTimeFormat(this.lang, timeFormatterOptions);
 
       this.useYearAndMonthTabs = useYearAndMonthTabs || !useYearAndMonthSelects;
-      this.useYearAndMonthSelects =
-        useYearAndMonthSelects || !useYearAndMonthTabs;
+      this.useYearAndMonthSelects = useYearAndMonthSelects || !useYearAndMonthTabs;
       if (this.useYearAndMonthSelects && this.useYearAndMonthTabs) {
         this.useYearAndMonthTabs = false;
       }
@@ -2648,20 +2518,17 @@ div.picker-footer {
         this.ttDateFormat = ttDateFormatResult.value;
       }
 
-      const ttTabsButtonFormatResult =
-        DateHelper.parseFormats(ttTabsButtonFormat);
+      const ttTabsButtonFormatResult = DateHelper.parseFormats(ttTabsButtonFormat);
       if (ttTabsButtonFormatResult.valid) {
         this.ttTabsButtonFormat = ttTabsButtonFormatResult.value;
       }
 
-      const ttPrevButtonFormatResult =
-        DateHelper.parseFormats(ttPrevButtonFormat);
+      const ttPrevButtonFormatResult = DateHelper.parseFormats(ttPrevButtonFormat);
       if (ttPrevButtonFormatResult.valid) {
         this.ttPrevButtonFormat = ttPrevButtonFormatResult.value;
       }
 
-      const ttNextButtonFormatResult =
-        DateHelper.parseFormats(ttNextButtonFormat);
+      const ttNextButtonFormatResult = DateHelper.parseFormats(ttNextButtonFormat);
       if (ttNextButtonFormatResult.valid) {
         this.ttNextButtonFormat = ttNextButtonFormatResult.value;
       }
@@ -2705,12 +2572,8 @@ div.picker-footer {
 
       this.showManualEntry = BasicUtilities.parseBoolean(showManualEntry);
       this.allowManualEntry = BasicUtilities.parseBoolean(allowManualEntry);
-      this.closePanelOnDateSelect = BasicUtilities.parseBoolean(
-        closePanelOnDateSelect
-      );
-      this.closePanelOnTimeSelect = BasicUtilities.parseBoolean(
-        closePanelOnTimeSelect
-      );
+      this.closePanelOnDateSelect = BasicUtilities.parseBoolean(closePanelOnDateSelect);
+      this.closePanelOnTimeSelect = BasicUtilities.parseBoolean(closePanelOnTimeSelect);
       this.showAllMonths = BasicUtilities.parseBoolean(showAllMonths);
       this.showAllYears = BasicUtilities.parseBoolean(showAllYears);
 
@@ -2719,20 +2582,14 @@ div.picker-footer {
       this.tabButtonContainer.classList.add("date-time-tabs");
       this.dateTabButton = document.createElement("button");
       this.dateTabButton.setAttribute("type", "button");
-      this.dateTabButton.setAttribute(
-        "aria-label",
-        "Displays the date picker interface"
-      );
+      this.dateTabButton.setAttribute("aria-label", "Displays the date picker interface");
       this.dateTabButton.dataset.tab = "date-picker";
       this.dateTabButton.classList.add("date-time-tab-date");
       this.dateTabButton.textContent = "Date";
       this.tabButtonContainer.appendChild(this.dateTabButton);
       this.timeTabButton = document.createElement("button");
       this.timeTabButton.setAttribute("type", "button");
-      this.timeTabButton.setAttribute(
-        "aria-label",
-        "Displays the time picker interface"
-      );
+      this.timeTabButton.setAttribute("aria-label", "Displays the time picker interface");
       this.timeTabButton.dataset.tab = "time-picker";
       this.timeTabButton.classList.add("date-time-tab-time");
       this.timeTabButton.textContent = "Time";
@@ -2758,7 +2615,7 @@ div.picker-footer {
       if (inputClassName && inputClassName.length) {
         this.inputElement.classList.add.apply(
           this.inputElement.classList,
-          inputClassName.split(" ")
+          inputClassName.split(" "),
         );
       }
       inputId = inputId ?? `date-time-${this.instanceId}`;
@@ -2766,7 +2623,7 @@ div.picker-footer {
       if (labelClassName && labelClassName.length) {
         this.labelElement.classList.add.apply(
           this.labelElement.classList,
-          labelClassName.split(" ")
+          labelClassName.split(" "),
         );
       }
       this.labelElement.htmlFor = inputId;
@@ -2783,7 +2640,7 @@ div.picker-footer {
       if (panelElementClassName && panelElementClassName.length) {
         this.panelElement.classList.add.apply(
           this.panelElement.classList,
-          panelElementClassName.split(" ")
+          panelElementClassName.split(" "),
         );
       }
       this.panelElement.classList.add("date-time-picker", "date-picker");
@@ -2854,13 +2711,8 @@ div.picker-footer {
         let w = d % 6;
         const dayHeader = document.createElement("span");
         dayHeader.classList.add("calendar-entry-body-header-weekday");
-        dayHeader.setAttribute(
-          "title",
-          this.weekdayLongFormatter.format(weekdayDates[w])
-        );
-        dayHeader.textContent = this.weekdayShortFormatter.format(
-          weekdayDates[w]
-        );
+        dayHeader.setAttribute("title", this.weekdayLongFormatter.format(weekdayDates[w]));
+        dayHeader.textContent = this.weekdayShortFormatter.format(weekdayDates[w]);
         calendarEntryBody.appendChild(dayHeader);
       }
       calendarEntry.appendChild(calendarEntryBody);
@@ -2913,33 +2765,21 @@ div.picker-footer {
 
       if (typeof window[minDate] === "function") {
         minDate = window[minDate]();
-      } else if (
-        typeof minDate === "string" &&
-        RelativeDateParser.canParse(minDate)
-      ) {
+      } else if (typeof minDate === "string" && RelativeDateParser.canParse(minDate)) {
         minDate = RelativeDateParser.parse(minDate, this.useUTC);
       }
       if (typeof window[maxDate] === "function") {
         maxDate = window[maxDate]();
-      } else if (
-        typeof maxDate === "string" &&
-        RelativeDateParser.canParse(maxDate)
-      ) {
+      } else if (typeof maxDate === "string" && RelativeDateParser.canParse(maxDate)) {
         maxDate = RelativeDateParser.parse(maxDate, this.useUTC);
       }
       this.minDate = this.parseDate(minDate, new Date(-8640000000000000));
       this.maxDate = this.parseDate(maxDate, new Date(8640000000000000));
-      this.disableDate =
-        typeof disableDate === "function" ? disableDate : (date) => false;
+      this.disableDate = typeof disableDate === "function" ? disableDate : (date) => false;
 
       this.panelElement.classList.toggle("use-tabs", this.useYearAndMonthTabs);
-      this.panelElement.classList.toggle(
-        "use-selects",
-        this.useYearAndMonthSelects
-      );
-      this.monthYearSelector = this.panelElement.querySelector(
-        ".month-year-selector"
-      );
+      this.panelElement.classList.toggle("use-selects", this.useYearAndMonthSelects);
+      this.monthYearSelector = this.panelElement.querySelector(".month-year-selector");
       this.datePickerElement = this.panelElement.querySelector(".date-picker");
       this.pickerInputElement = this.panelElement.querySelector(".date-utc");
       this.monthSelect = this.panelElement.querySelector(".month-utc");
@@ -2979,94 +2819,42 @@ div.picker-footer {
       this.mergeBoundHandlers(
         document.documentElement,
         "click",
-        this.somethingElseGotFocus.bind(this)
+        this.somethingElseGotFocus.bind(this),
       );
       if (this.showOn.contains("focus")) {
         me.elements.add(this.inputElement);
-        this.mergeBoundHandlers(
-          this.inputElement,
-          "focus",
-          this.gotFocus.bind(this)
-        );
+        this.mergeBoundHandlers(this.inputElement, "focus", this.gotFocus.bind(this));
       }
       if (this.showOn.contains("button")) {
         me.elements.add(this.buttonElement);
-        this.mergeBoundHandlers(
-          this.buttonElement,
-          "click",
-          this.gotFocus.bind(this)
-        );
+        this.mergeBoundHandlers(this.buttonElement, "click", this.gotFocus.bind(this));
       }
       me.elements.add(this.inputElement);
-      this.mergeBoundHandlers(
-        this.inputElement,
-        "focusout",
-        this.lostFocus.bind(this)
-      );
+      this.mergeBoundHandlers(this.inputElement, "focusout", this.lostFocus.bind(this));
       me.elements.add(this.panelElement);
-      this.mergeBoundHandlers(
-        this.panelElement,
-        "click",
-        this.panelClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.panelElement, "click", this.panelClicked.bind(this));
       me.elements.add(this.prevMonth);
-      this.mergeBoundHandlers(
-        this.prevMonth,
-        "click",
-        this.prevClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.prevMonth, "click", this.prevClicked.bind(this));
       me.elements.add(this.nextMonth);
-      this.mergeBoundHandlers(
-        this.nextMonth,
-        "click",
-        this.nextClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.nextMonth, "click", this.nextClicked.bind(this));
       if (this.useYearAndMonthSelects) {
         me.elements.add(this.monthSelect);
-        this.mergeBoundHandlers(
-          this.monthSelect,
-          "change",
-          this.monthSelected.bind(this)
-        );
+        this.mergeBoundHandlers(this.monthSelect, "change", this.monthSelected.bind(this));
         me.elements.add(this.yearSelect);
-        this.mergeBoundHandlers(
-          this.yearSelect,
-          "change",
-          this.yearSelected.bind(this)
-        );
+        this.mergeBoundHandlers(this.yearSelect, "change", this.yearSelected.bind(this));
       }
       if (this.useYearAndMonthTabs) {
         me.elements.add(this.monthYearSelector);
-        this.mergeBoundHandlers(
-          this.monthYearSelector,
-          "click",
-          this.monthYearClicked.bind(this)
-        );
+        this.mergeBoundHandlers(this.monthYearSelector, "click", this.monthYearClicked.bind(this));
       }
       me.elements.add(this.cancelButton);
-      this.mergeBoundHandlers(
-        this.cancelButton,
-        "click",
-        this.cancelClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.cancelButton, "click", this.cancelClicked.bind(this));
       me.elements.add(this.okayButton);
-      this.mergeBoundHandlers(
-        this.okayButton,
-        "click",
-        this.submitClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.okayButton, "click", this.submitClicked.bind(this));
       me.elements.add(this.dateTabButton);
-      this.mergeBoundHandlers(
-        this.dateTabButton,
-        "click",
-        this.tabClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.dateTabButton, "click", this.tabClicked.bind(this));
       me.elements.add(this.timeTabButton);
-      this.mergeBoundHandlers(
-        this.timeTabButton,
-        "click",
-        this.tabClicked.bind(this)
-      );
+      this.mergeBoundHandlers(this.timeTabButton, "click", this.tabClicked.bind(this));
 
       this.#logLevel <= LogLevel.Log && console.timeEnd("init");
     } catch (err) {

@@ -492,16 +492,11 @@ export const unitToAdder = {
 export const unitToSetter = {
   y: (date, value, useUTC = true) =>
     useUTC ? date.setUTCFullYear(value) : date.setFullYear(value),
-  M: (date, value, useUTC = true) =>
-    useUTC ? date.setUTCMonth(value) : date.setMonth(value),
-  d: (date, value, useUTC = true) =>
-    useUTC ? date.setUTCDate(value) : date.setDate(value),
-  H: (date, value, useUTC = true) =>
-    useUTC ? date.setUTCHours(value) : date.setHours(value),
-  m: (date, value, useUTC = true) =>
-    useUTC ? date.setUTCMinutes(value) : date.setMinutes(value),
-  s: (date, value, useUTC = true) =>
-    useUTC ? date.setUTCSeconds(value) : date.setSeconds(value),
+  M: (date, value, useUTC = true) => (useUTC ? date.setUTCMonth(value) : date.setMonth(value)),
+  d: (date, value, useUTC = true) => (useUTC ? date.setUTCDate(value) : date.setDate(value)),
+  H: (date, value, useUTC = true) => (useUTC ? date.setUTCHours(value) : date.setHours(value)),
+  m: (date, value, useUTC = true) => (useUTC ? date.setUTCMinutes(value) : date.setMinutes(value)),
+  s: (date, value, useUTC = true) => (useUTC ? date.setUTCSeconds(value) : date.setSeconds(value)),
   f: (date, value, useUTC = true) =>
     useUTC ? date.setUTCMilliseconds(value) : date.setMilliseconds(value),
 };
@@ -522,7 +517,9 @@ export function validateLocales(locales) {
     locales = [locales];
   }
   if (typeof locales === "undefined" || locales === null) {
-    console.warn(`The value passed to validateLocales was undefined or null; the value returned will be an array with the locale of the host ("${getProbableClientLocale()}").`);
+    console.warn(
+      `The value passed to validateLocales was undefined or null; the value returned will be an array with the locale of the host ("${getProbableClientLocale()}").`,
+    );
     locales = [getProbableClientLocale()];
   }
   if (!Array.isArray(locales)) {
@@ -535,7 +532,7 @@ export function validateLocales(locales) {
     valid: invalidLocales.length === 0,
     invalidValues: invalidLocales,
     value: locales.flat().filter((tag) => bcp47re.test(tag)),
-    error: `The following locales were invalid: ${invalidLocales}`
+    error: `The following locales were invalid: ${invalidLocales}`,
   };
 }
 
@@ -554,10 +551,10 @@ export function validateFormats(formats, locales) {
     formats = [getDefaultFormatForLocale(locales)];
   }
   if (!Array.isArray(formats)) {
-    console.error(`Unable to make the specified formats ("${formats}") into an array.`)
-    return {valid:false,invalidValues:[formats].flat(),value:undefined};
+    console.error(`Unable to make the specified formats ("${formats}") into an array.`);
+    return { valid: false, invalidValues: [formats].flat(), value: undefined };
   }
-  return {valid:true,invalidValues:undefined,value:formats};
+  return { valid: true, invalidValues: undefined, value: formats };
 }
 /**
  * Validates the options provided are within the allowable values or ranges.
@@ -566,7 +563,7 @@ export function validateFormats(formats, locales) {
  * If a value is not allowed, a warning will appear in the console, and the default value will be used.
  */
 export function validateOptions(options) {
-  const resolvedOptions = new Intl.DateTimeFormat([], { 
+  const resolvedOptions = new Intl.DateTimeFormat([], {
     dateStyle: "short",
     timeStyle: "short",
   }).resolvedOptions();
@@ -597,7 +594,7 @@ export function validateOptions(options) {
   const validateAgainstList = (value, list, name, def) => {
     if (value && value.length && !list.includes(value)) {
       console.warn(
-        `The provided ${name}, "${value}", is not valid. The default, "${def}" will be used.`
+        `The provided ${name}, "${value}", is not valid. The default, "${def}" will be used.`,
       );
       return def ?? undefined;
     }
@@ -607,20 +604,24 @@ export function validateOptions(options) {
     timeZone,
     Intl.supportedValuesOf("timeZone"),
     "timeZone",
-    resolvedOptions.timeZone
+    resolvedOptions.timeZone,
   );
   let { valid, invalidValues, value } = validateFormats(formats);
   if (!valid) {
-    console.warn(`An invalid format, or invalid set of formats, "${invalidValues}" was provided; the default, "${getDefaultFormatForLocale([getProbableClientLocale()])} will be used."`);
-    formats = value?.length ? value.flat() : [getDefaultFormatForLocale([getProbableClientLocale()])].flat();
+    console.warn(
+      `An invalid format, or invalid set of formats, "${invalidValues}" was provided; the default, "${getDefaultFormatForLocale([getProbableClientLocale()])} will be used."`,
+    );
+    formats = value?.length
+      ? value.flat()
+      : [getDefaultFormatForLocale([getProbableClientLocale()])].flat();
   }
   ({ valid, invalidValues, value } = validateLocales(locales));
   if (!valid) {
     console.warn(
-      `A locale, or set of locales, "${invalidValues}" was provided, the current, "${getProbableClientLocale()}" will be used.`
+      `A locale, or set of locales, "${invalidValues}" was provided, the current, "${getProbableClientLocale()}" will be used.`,
     );
     locales = value?.length ? value.flat() : [getProbableClientLocale()].flat();
-    console.log('locales', locales);
+    console.log("locales", locales);
   }
   locales = value?.length ? value.flat() : [getProbableClientLocale()].flat();
   calendar = validateAgainstList(
@@ -647,7 +648,7 @@ export function validateOptions(options) {
       "islamicc",
     ],
     "calendar",
-    resolvedOptions.calendar
+    resolvedOptions.calendar,
   );
   calendar = calendar === "islamicc" ? "islamic-civil" : calendar;
   numberingSystem = validateAgainstList(
@@ -677,107 +678,60 @@ export function validateOptions(options) {
       "tibt",
     ],
     "numberingSystem",
-    resolvedOptions.numberingSystem
+    resolvedOptions.numberingSystem,
   );
   localeMatcher = validateAgainstList(
     localeMatcher,
     ["lookup", "best fit"],
     "localeMatcher",
-    "best fit"
+    "best fit",
   );
   if (typeof hour12 !== "boolean") {
     console.warn(
-      `The provided hour12 value, "${hour12}", is not valid. The default, ${resolvedOptions.hour12} will be used.`
+      `The provided hour12 value, "${hour12}", is not valid. The default, ${resolvedOptions.hour12} will be used.`,
     );
     hour12 = undefined;
   }
-  hour12 = validateAgainstList(
-    hour12,
-    [true, false],
-    "hour12",
-    undefined
-  );
-  hour12 ??= resolvedOptions.hour12 ?? hourCycle ? undefined : false;
+  hour12 = validateAgainstList(hour12, [true, false], "hour12", undefined);
+  hour12 ??= (resolvedOptions.hour12 ?? hourCycle) ? undefined : false;
   hourCycle = validateAgainstList(
     hourCycle,
     ["h11", "h12", "h23", "h24"],
     "hourCycle",
-    resolvedOptions.hourCycle
+    resolvedOptions.hourCycle,
   );
   hourCycle ??= hour12 ? "h12" : "h23";
   formatMatcher = validateAgainstList(
     formatMatcher,
     ["basic", "best fit"],
     "formatMatcher",
-    "best fit"
+    "best fit",
   );
   weekday = validateAgainstList(
     weekday,
     ["long", "short", "narrow"],
     "weekday",
-    resolvedOptions.weekday
+    resolvedOptions.weekday,
   );
-  era = validateAgainstList(
-    era,
-    ["long", "short", "narrow"],
-    "era",
-    resolvedOptions.era
-  );
-  year = validateAgainstList(
-    year,
-    ["numeric", "2-digit"],
-    "year",
-    resolvedOptions.year
-  );
-  month = validateAgainstList(
-    month,
-    ["numeric", "2-digit"],
-    "month",
-    resolvedOptions.month
-  );
-  day = validateAgainstList(
-    day,
-    ["numeric", "2-digit"],
-    "day",
-    resolvedOptions.day
-  );
-  hour = validateAgainstList(
-    hour,
-    ["numeric", "2-digit"],
-    "hour",
-    resolvedOptions.hour
-  );
-  minute = validateAgainstList(
-    minute,
-    ["numeric", "2-digit"],
-    "minute",
-    resolvedOptions.minute
-  );
-  second = validateAgainstList(
-    second,
-    ["numeric", "2-digit"],
-    "second",
-    resolvedOptions.second
-  );
+  era = validateAgainstList(era, ["long", "short", "narrow"], "era", resolvedOptions.era);
+  year = validateAgainstList(year, ["numeric", "2-digit"], "year", resolvedOptions.year);
+  month = validateAgainstList(month, ["numeric", "2-digit"], "month", resolvedOptions.month);
+  day = validateAgainstList(day, ["numeric", "2-digit"], "day", resolvedOptions.day);
+  hour = validateAgainstList(hour, ["numeric", "2-digit"], "hour", resolvedOptions.hour);
+  minute = validateAgainstList(minute, ["numeric", "2-digit"], "minute", resolvedOptions.minute);
+  second = validateAgainstList(second, ["numeric", "2-digit"], "second", resolvedOptions.second);
   fractionalSecondDigits = validateAgainstList(
     fractionalSecondDigits,
     ["0", "1", "2", "3", 0, 1, 2, 3],
     "fractionalSecondDigits",
-    resolvedOptions.fractionalSecondDigits
+    resolvedOptions.fractionalSecondDigits,
   );
   fractionalSecondDigits ??= 0;
   timeZoneName = validateAgainstList(
     timeZoneName,
-    [
-      "long",
-      "short",
-      "longOffset",
-      "shortOffset",
-      "longGeneric",
-      "shortGeneric",
-    ],
+    ["long", "short", "longOffset", "shortOffset", "longGeneric", "shortGeneric"],
     "timeZoneName",
-    resolvedOptions.timeZoneName
+    resolvedOptions.timeZoneName,
   );
   return {
     timeZone,
@@ -842,7 +796,7 @@ export function getProbableClientTimeZoneName(locales) {
   if (!localesResult.valid) {
     throw new Error(localesResult.error);
   }*/
-  const defaultFormat = new Intl.DateTimeFormat([]/*localesResult.value*/);
+  const defaultFormat = new Intl.DateTimeFormat([] /*localesResult.value*/);
   const options = defaultFormat.resolvedOptions();
   return options?.timeZone;
 }
@@ -857,9 +811,7 @@ export function getProbableClientTimeZoneName(locales) {
  */
 export function getDefaultFormatForLocale(locales, style = "short") {
   if (![undefined, null, "full", "long", "medium", "short"].includes(style)) {
-    throw new Error(
-      `style must be undefined, null, "full", "long", "medium", or "short"`
-    );
+    throw new Error(`style must be undefined, null, "full", "long", "medium", or "short"`);
   }
   style ??= "short";
   const localesResult = validateLocales(locales);

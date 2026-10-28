@@ -1,10 +1,5 @@
 import DatePart, { DatePartCollection } from "../DatePart.mjs";
-import {
-  stringsToFormatMap,
-  unitToSetter,
-  validateFormats,
-  validateOptions,
-} from "./common.mjs";
+import { stringsToFormatMap, unitToSetter, validateFormats, validateOptions } from "./common.mjs";
 import format from "./formatter.mjs";
 
 /**
@@ -22,23 +17,17 @@ import format from "./formatter.mjs";
  */
 function trySetDatePartFromPart(value, part, date, options) {
   if (!part || part.index == null) {
-    console.error(
-      `The part specified, ${part ? JSON.stringify(part) : part}, is not valid`
-    );
+    console.error(`The part specified, ${part ? JSON.stringify(part) : part}, is not valid`);
     return { success: false };
   }
-  const indexOfPartEndByAlphaNum = options.indexesOfNonAlphaNumChars.find(
-    (i) => i > part.index
-  );
-  const indexOfPartEndByNum = options.indexesOfNonNumChars.find(
-    (i) => i > part.index
-  );
+  const indexOfPartEndByAlphaNum = options.indexesOfNonAlphaNumChars.find((i) => i > part.index);
+  const indexOfPartEndByNum = options.indexesOfNonNumChars.find((i) => i > part.index);
   const endingIndex = Math.max(
     Math.min(
       indexOfPartEndByAlphaNum ?? Number.POSITIVE_INFINITY,
-      indexOfPartEndByNum ?? Number.POSITIVE_INFINITY
+      indexOfPartEndByNum ?? Number.POSITIVE_INFINITY,
     ),
-    part.index + part.length
+    part.index + part.length,
   );
   if (part.end !== endingIndex) {
     part.length = part.end - part.index;
@@ -55,8 +44,8 @@ function trySetDatePartFromPart(value, part, date, options) {
     console.warn(
       `The ${part.name} portion, "${value.slice(
         part.index,
-        part.end
-      )}" was not able to be parsed as a number; #trySetDatePartFromPart`
+        part.end,
+      )}" was not able to be parsed as a number; #trySetDatePartFromPart`,
     );
   }
 
@@ -74,9 +63,7 @@ function getDateFromParts(value, parts, options) {
   // parse it successfully; Given a year, a month, and a day, I'd already know the weekday, so what if the parsed one is
   // different? If I get a year, a month, and a weekday, I'd need a week number to know what day it is, and there currently is no
   // token for week number.
-  const nonAlphaNumChars = new Set(
-    [...value].filter((c) => /[^\p{L}\p{N}]/u.test(c))
-  );
+  const nonAlphaNumChars = new Set([...value].filter((c) => /[^\p{L}\p{N}]/u.test(c)));
   const indexesOfNonAlphaNumChars = [...value]
     .map((c, i) => (nonAlphaNumChars.has(c) ? i : null))
     .filter((i) => i !== null);
@@ -92,7 +79,7 @@ function getDateFromParts(value, parts, options) {
   const yearPart = parts.getByType("year");
   if (!trySetDatePartFromPart(value, yearPart, date, options).success) {
     console.warn(
-      `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`
+      `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`,
     );
   }
   const monthPart = parts.getByType("month");
@@ -111,55 +98,53 @@ function getDateFromParts(value, parts, options) {
       console.warn(
         `The month portion, "${value.slice(
           monthPart.index,
-          monthPart.end
-        )}" was not able to be parsed as a month name`
+          monthPart.end,
+        )}" was not able to be parsed as a month name`,
       );
     }
   }
   const dayPart = parts.getByType("day");
   if (!trySetDatePartFromPart(value, dayPart, date, options).success) {
     console.warn(
-      `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`
+      `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`,
     );
   }
   const hourPart = parts.getByType("hour");
   if (!trySetDatePartFromPart(value, hourPart, date, options).success) {
     console.warn(
-      `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`
+      `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`,
     );
   }
   const minutePart = parts.getByType("minute");
   if (!trySetDatePartFromPart(value, minutePart, date, options).success) {
     console.warn(
-      `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`
+      `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`,
     );
   }
   const secondPart = parts.getByType("second");
   if (!trySetDatePartFromPart(value, secondPart, date, options).success) {
     console.warn(
-      `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`
+      `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`,
     );
   }
   const millisecondPart =
     parts.getByType("fractionalSecondDigits") ?? parts.getByType("millisecond");
   if (!trySetDatePartFromPart(value, millisecondPart, date, options).success) {
     console.warn(
-      `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`
+      `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`,
     );
   }
   return date;
 }
 
 /**
- * 
+ *
  * @param {string} format The format string for the value being parsed, with the date parts replaced with underscores (_). This happens during the parse function.
  * @returns {DatePart[]|Partial<DatePart>[]} The DatePart object representing the literal strings
  */
 function parseLiteralsFromFormat(format) {
   const literalsPass0 = [...format];
-  const literalsPass1 = literalsPass0.map((char, index) =>
-    char === "_" ? null : [index, char]
-  );
+  const literalsPass1 = literalsPass0.map((char, index) => (char === "_" ? null : [index, char]));
   const literalsPass2 = literalsPass1.filter((item) => item != null);
   const literalsPass3 = literalsPass2.reduce(
     (agg, [index, value], idx, arr) => [
@@ -167,13 +152,12 @@ function parseLiteralsFromFormat(format) {
       arr[idx - 1]?.[0] === index - 1
         ? [index, `${arr[idx - 1][1]}${value}`]
         : arr[idx + 1]?.[0] === index + 1
-        ? undefined
-        : !(arr[idx - 1]?.[0] === index - 1) &&
-          !(arr[idx + 1]?.[0] === index + 1)
-        ? [index, value]
-        : undefined,
+          ? undefined
+          : !(arr[idx - 1]?.[0] === index - 1) && !(arr[idx + 1]?.[0] === index + 1)
+            ? [index, value]
+            : undefined,
     ],
-    []
+    [],
   );
   const literalsPass4 = literalsPass3.filter((f) => f !== undefined);
   const literalsPass5 = literalsPass4.map(([index, value], idx) => ({
@@ -230,7 +214,7 @@ export default function parse(value, options) {
   }
   let formatUsed = formats?.[0];
   const stringsToFind = Object.keys(stringsToFormatMap).filter((s) =>
-    (formats ?? []).some((f) => f.includes(s))
+    (formats ?? []).some((f) => f.includes(s)),
   );
   let date;
   for (let f of formats) {
@@ -244,8 +228,8 @@ export default function parse(value, options) {
         part.length = ["y", "yyyy"].includes(stringToFind)
           ? 4 /* Have to put a number on it */
           : part[part.type]?.includes("2")
-          ? 2
-          : stringToFind.length;
+            ? 2
+            : stringToFind.length;
         parts = parts.add(part, false);
         f = f.replace(stringToFind, "_".repeat(part.length));
       }

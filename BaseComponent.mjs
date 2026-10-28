@@ -14,14 +14,14 @@ export default class BaseComponent extends HTMLElement {
   constructor(prefix, logLevel = LogLevel.Error) {
     super();
     this.#prefix = prefix;
-    this.#logLevel = logLevel;
+    this.#logLevel = +logLevel;
   }
   /**
    * Gets the log level for the component.
    * @returns {LogLevel} The log level.
    */
   get logLevel() {
-    return this.#logLevel;
+    return this.#logLezel;
   }
   /**
    * Sets the log level for the component.
@@ -29,7 +29,7 @@ export default class BaseComponent extends HTMLElement {
    */
   set logLevel(value) {
     if (this.#logLevel !== value) {
-        this.#logLevel = value;
+      this.#logLevel = +value;
     }
   }
   /**
@@ -43,16 +43,8 @@ export default class BaseComponent extends HTMLElement {
     try {
       fn.call(context, ...args);
     } catch (err) {
-      const errorEvent = new Event("error", {
-        message: err.message,
-        filename: err.filename,
-        lineno: err.lineno,
-        colno: err.colno,
-        error: err,
-      });
-      if (
-        this.dispatchEventAndReport(`${this.#prefix}-error`, errorEvent, err)
-      ) {
+      const errorEvent = new Event("error");
+      if (this.dispatchEventAndReport(`${this.#prefix}-error`, errorEvent, err)) {
         throw err;
       }
     }

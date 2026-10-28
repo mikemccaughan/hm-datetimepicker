@@ -6,7 +6,7 @@ import parse from "../fn-date-time/parser.mjs";
 await test("getDefaultFormatForLocale", async (t) => {
   await t.test("returns default format for en-US", (t) => {
     const format = getDefaultFormatForLocale(["en-US"]);
-    assert.strictEqual(format.includes('M/d/y'), true, "contains M/d/y");
+    assert.strictEqual(format.includes("M/d/y"), true, "contains M/d/y");
   });
 });
 await test("validateOptions", async (t) => {
@@ -21,32 +21,24 @@ await test("validateOptions", async (t) => {
     assert.strictEqual(
       defaults.formatMatcher,
       resolved.formatMatcher ?? "best fit",
-      "formatMatcher"
+      "formatMatcher",
     );
     assert.strictEqual(defaults.formats, undefined, "formats");
-    assert.strictEqual(
-      defaults.fractionalSecondDigits,
-      0,
-      "fractionalSecondDigits"
-    );
+    assert.strictEqual(defaults.fractionalSecondDigits, 0, "fractionalSecondDigits");
     assert.strictEqual(defaults.hour, undefined, "hour");
     assert.strictEqual(defaults.hour12, true, "hour12");
     assert.strictEqual(defaults.hourCycle, "h12", "hourCycle");
     assert.strictEqual(
       defaults.localeMatcher,
       resolved.localeMatcher ?? "best fit",
-      "localeMatcher"
+      "localeMatcher",
     );
     assert.notStrictEqual(defaults.locales, undefined, "locales is undefined");
     assert.strictEqual(defaults.locales.length, 1, "locales.length");
     assert.strictEqual(defaults.locales[0], resolved.locale, "locales[0]");
     assert.strictEqual(defaults.minute, undefined, "minute");
     assert.strictEqual(defaults.month, undefined, "month");
-    assert.strictEqual(
-      defaults.numberingSystem,
-      resolved.numberingSystem,
-      "numberingSystem"
-    );
+    assert.strictEqual(defaults.numberingSystem, resolved.numberingSystem, "numberingSystem");
     assert.strictEqual(defaults.second, undefined, "second");
     assert.strictEqual(defaults.timeStyle, "short", "timeStyle");
     assert.strictEqual(defaults.timeZone, resolved.timeZone, "timeZone");
@@ -66,13 +58,10 @@ await test("parse", async (t) => {
   await t.test("parse date, no options", (t) => {
     assert.strictEqual(
       date.toISOString(),
-      parse("1/15/2021, 0:00 AM").toISOString() // 2021-01-15T00:00:00.000Z
+      parse("1/15/2021, 0:00 AM").toISOString(), // 2021-01-15T00:00:00.000Z
     );
   });
   await t.test("parse date 101 years afterward", (t) => {
-    assert.strictEqual(
-      datePlus101y.toISOString(),
-      datePlus101y.toISOString()
-    );
+    assert.strictEqual(datePlus101y.toISOString(), datePlus101y.toISOString());
   });
 });

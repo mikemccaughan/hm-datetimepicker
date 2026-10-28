@@ -1,9 +1,10 @@
+import BigIntHelpers from "../bigint.helpers.mjs";
+
 /**
  * @typedef {object} Description The result of a call to a Describe method
  * @property {boolean} same true if the values are the same; otherwise, false
  * @property {string|undefined} message The error message is the values are not the same; otherwise, undefined
  */
-
 export class Describe {
   /**
    * Determines if the values given are exactly equal, except for arrays (which are fed to `hasSameValues`) and
@@ -14,7 +15,7 @@ export class Describe {
    * @param {string?} desc The description of the test (if any; bascially a prefix to put in front of any error messages, after the title)
    * @returns {Description} A boolean indicating if the values are equal and, if not, an error message.
    */
-  static isEqual(expected, actual, title, desc) {
+  static isEqual(expected, actual, title, desc = null) {
     if (Array.isArray(expected) && Array.isArray(actual)) {
       return Describe.hasSameValues(expected, actual, title, desc);
     }
@@ -37,7 +38,7 @@ export class Describe {
    * @param {string?} desc The description of the test (if any; bascially a prefix to put in front of any error messages, after the title)
    * @returns {Description} A boolean indicating if the values are the same and, if not, an error message.
    */
-  static isClose(expected, actual, title, desc) {
+  static isClose(expected, actual, title, desc = null) {
     if (typeof expected !== typeof actual) {
       return {
         same: false,
@@ -52,8 +53,16 @@ export class Describe {
         };
       }
     }
-    if (typeof expected === "number" || typeof expected === "bigint") {
+    if (typeof expected === "number" && typeof actual === "number") {
       if (Math.abs(expected - actual) < Number.EPSILON) {
+        return {
+          same: false,
+          message: `${title}: ${desc}: The values given are not the same (difference less than EPSILON): Expected ${expected} to equal ${actual}.`,
+        };
+      }
+    }
+    if (typeof expected === "bigint" && typeof actual === "bigint") {
+      if (BigIntHelpers.abs(expected - actual) < Number.EPSILON) {
         return {
           same: false,
           message: `${title}: ${desc}: The values given are not the same (difference less than EPSILON): Expected ${expected} to equal ${actual}.`,
@@ -76,20 +85,14 @@ export class Describe {
         };
       }
     }
-    if (
-      !Describe.hasSameValues(
-        Object.entries(expected),
-        Object.entries(actual),
-        title,
-        desc
-      )
-    ) {
+    if (!Describe.hasSameValues(Object.entries(expected), Object.entries(actual), title, desc)) {
       return {
         same: false,
         message: `${title}: ${desc}: The values given are not the same (by property): Expected ${expected} to equal ${actual}.`,
       };
     }
-    return { same: true };
+
+    return { same: true, message: "" };
   }
   /**
    * Ensures the arrays contain the same number, type, and value of elements
@@ -97,9 +100,10 @@ export class Describe {
    * @param {any[]} actual The actual array
    * @param {string?} title The title of the test
    * @param {string?} desc The description of what went wrong (to supplement the error text)
+   * @returns {Description} A boolean indicating if the values are the same and, if not, an error message.
    * @throws An error if the arrays contain different amounts, types, or value of elements. (Checks through one level of nested arrays)
    */
-  static hasSameValues(expected, actual, title, desc) {
+  static hasSameValues(expected, actual, title, desc = null) {
     if (Array.isArray(expected) && Array.isArray(actual)) {
       if (expected.length !== actual.length) {
         return {
@@ -111,11 +115,9 @@ export class Describe {
         !expected.every((ae) =>
           actual.some((be) =>
             Array.isArray(ae) && Array.isArray(be)
-              ? ae.every((aee) =>
-                  be.some((bee) => Describe.isEqual(aee, bee, title, desc).same)
-                )
-              : Describe.isEqual(ae, be, title, desc).same
-          )
+              ? ae.every((aee) => be.some((bee) => Describe.isEqual(aee, bee, title, desc).same))
+              : Describe.isEqual(ae, be, title, desc).same,
+          ),
         )
       ) {
         return {
@@ -131,14 +133,7 @@ export class Describe {
         };
       }
     } else if (typeof expected === "object" && typeof actual === "object") {
-      if (
-        !Describe.hasSameValues(
-          Object.entries(expected),
-          Object.entries(actual),
-          title,
-          desc
-        )
-      ) {
+      if (!Describe.hasSameValues(Object.entries(expected), Object.entries(actual), title, desc)) {
         return {
           same: false,
           message: `${title}: ${desc}: The values given are not the same (entries): Expected ${expected} to equal ${actual}.`,
@@ -152,7 +147,7 @@ export class Describe {
         };
       }
     }
-    return { same: true };
+    return { same: true, message: "" };
   }
 }
 export class Assert {
@@ -165,7 +160,7 @@ export class Assert {
    * @param {string?} desc The description of what went wrong (to supplement the error)
    * @throws An error if they are not equal
    */
-  static isEqual(expected, actual, title, desc) {
+  static isEqual(expected, actual, title, desc = null) {
     const description = Describe.isEqual(expected, actual, title, desc);
     if (!description.same) {
       throw new Error(description.message);
@@ -180,7 +175,7 @@ export class Assert {
    * @throws An error if the values are dates and calling `valueOf()` results in different values, or
    * if any of the entries of the respective items differ.
    */
-  static isClose(expected, actual, title, desc) {
+  static isClose(expected, actual, title, desc = null) {
     const description = Describe.isClose(expected, actual, title, desc);
     if (!description.same) {
       throw new Error(description.message);
@@ -194,8 +189,8 @@ export class Assert {
    * @param {string?} desc The description of what went wrong (to supplement the error text)
    * @throws An error if the arrays contain different amounts, types, or value of elements. (Checks through one level of nested arrays)
    */
-  static hasSameValues(a, b, title, desc) {
-    const description = Describe.hasSameValues(expected, actual, title, desc);
+  static hasSameValues(a, b, title, desc = null) {
+    const description = Describe.hasSameValues(a, b, title, desc);
     if (!description.same) {
       throw new Error(description.message);
     }

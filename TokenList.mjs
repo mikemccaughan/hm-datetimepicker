@@ -1,37 +1,37 @@
 /**
  * Stolen from https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList combined with
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set:
- * 
- * The TokenList interface represents a set of space-separated tokens. A TokenList is 
- * indexed beginning with 0 as with JavaScript Array objects. TokenList is always 
+ *
+ * The TokenList interface represents a set of space-separated tokens. A TokenList is
+ * indexed beginning with 0 as with JavaScript Array objects. TokenList is always
  * case-sensitive.
  */
 export default class TokenList {
   #validateValues(values) {
     var tokens = [...values];
-    if (tokens.some(token => typeof token !== 'string' || token.length === 0)) {
+    if (tokens.some((token) => typeof token !== "string" || token.length === 0)) {
       throw new SyntaxError("All arguments to add must be valid strings with content");
     }
-    if (tokens.some(token => /\s/.test(token))) {
-      throw new InvalidCharacterError("One of the arguments contained whitespace")
+    if (tokens.some((token) => /\s/.test(token))) {
+      throw new InvalidCharacterError("One of the arguments contained whitespace");
     }
   }
   #validateValue(value) {
-    if (typeof value !== 'string' || value.length === 0) {
+    if (typeof value !== "string" || value.length === 0) {
       throw new SyntaxError("The value must be a valid string with content");
     }
     if (/\s/.test(value)) {
-      throw new InvalidCharacterError("One of the arguments contained whitespace")
+      throw new InvalidCharacterError("One of the arguments contained whitespace");
     }
   }
   #parseStringToSet(value) {
     const tokens = value
       .trim()
-      .split(' ')
+      .split(" ")
       .map((token) => token.trim())
       .filter((token) => token.length);
-    if (tokens.some(token => /\s/.test(token))) {
-      throw new InvalidCharacterError("One of the arguments contained whitespace")
+    if (tokens.some((token) => /\s/.test(token))) {
+      throw new InvalidCharacterError("One of the arguments contained whitespace");
     }
     return new Set(tokens);
   }
@@ -40,17 +40,17 @@ export default class TokenList {
   /**
    * Initializes a TokenList to the specified value, or just an empty list.
    * @param {undefined|null|TokenList|string[]|string} value The value to initialize the TokenList with.
-   * Can be another instance of TokenList, an array of string tokens, or a space-separated list of 
+   * Can be another instance of TokenList, an array of string tokens, or a space-separated list of
    * tokens in string format.
    */
   constructor(value) {
     if (value == null || value.length === 0) {
       this.list = new Set();
     } else if (value instanceof TokenList) {
-      this.list = new Set([...value.list]);
+      this.list = new Set(value.list);
     } else if (Array.isArray(value)) {
       this.#validateValues(value);
-      this.list = new Set([...value]);
+      this.list = new Set(value);
     } else {
       this.list = this.#parseStringToSet(value);
     }
@@ -66,10 +66,10 @@ export default class TokenList {
    * Note that setting the value replaces any existing tokens in the list.
    */
   get value() {
-    return [...this.list].join(' ');
+    return [...this.list].join(" ");
   }
   set value(value) {
-    if (typeof value !== 'string' || value.length === 0) {
+    if (typeof value !== "string" || value.length === 0) {
       throw new SyntaxError("The value must be a valid string with content");
     }
     this.list = this.#parseStringToSet(value);
@@ -81,9 +81,7 @@ export default class TokenList {
    */
   item(index) {
     // Sets are great when you don't need to do anything with them involving indexes...
-    return index < 0 || index > this.list.size - 1
-      ? undefined
-      : [...this.list][index];
+    return index < 0 || index > this.list.size - 1 ? undefined : [...this.list][index];
   }
   /**
    * Inidcates whether the token is present.
@@ -107,7 +105,7 @@ export default class TokenList {
    */
   remove(...tokens) {
     this.#validateValues(tokens);
-    tokens.forEach(this.list.delete)
+    tokens.forEach(this.list.delete);
   }
   /**
    * Replaces oldToken with newToken.
@@ -186,7 +184,7 @@ export default class TokenList {
     [...this.list].forEach(callback, thisArg);
   }
   /**
-   * The keys() method of the TokenList interface returns an iterator allowing to go through all keys 
+   * The keys() method of the TokenList interface returns an iterator allowing to go through all keys
    * contained in this object. The keys are unsigned integers.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/DOMTokenList/keys
    */
@@ -204,14 +202,14 @@ export default class TokenList {
   }
   /**
    * Outputs a space-separated string of tokens, same as the `value` property.
-   * @returns A space-separated list of tokens contained in the list. 
+   * @returns A space-separated list of tokens contained in the list.
    */
   toString() {
     return this.value;
   }
   /**
    * Outputs a space-separated string of tokens, same as the `value` property.
-   * @returns A space-separated list of tokens contained in the list. 
+   * @returns A space-separated list of tokens contained in the list.
    */
   toJSON() {
     return this.value;

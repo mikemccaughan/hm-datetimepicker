@@ -21,7 +21,7 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
  * BCP 47 language tag), or an array of such strings, or undefined or null (to use the browser's default)
  * @property {string|string[]|undefined} format The format in which to format the date (must be a valid
  * format string), or an array of such strings, or undefined or null (to use the locale's default format)
- * @property {string|string[]|undefined} timeZone The time zone in which to format the date (must be a
+ * @property {string|undefined} timeZone The time zone in which to format the date (must be a
  * valid IANA time zone name, or 'UTC', or undefined or null to use 'UTC')
  */
 /**
@@ -59,7 +59,7 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
  * @property {string|undefined|null} error a string, containing the errors that have occurred, if any
  */
 /**
- * @typedef {(date, value, useUTC = true) => void} DatePartSetter Sets a portion of the date to the given value
+ * @typedef {(date: Date, value: number, useUTC: boolean) => void} DatePartSetter Sets a portion of the date to the given value
  * @param {Date} date The Date whose portion will be set
  * @param {number} value The value to which to set the portion of the date
  * @param {boolean?} useUTC true (default) to use UTC method to set the portion; otherwise will use local date method.
@@ -136,7 +136,30 @@ export default class DateHelper {
    * output, instead of the "narrow" version of the era).
    * Note: There are a large number of format strings that are unused. These are mostly sourced
    * from Unicode's CLDR.
-   * @type {Record<string, Intl.DateTimeFormatOptions>}
+   * @type {Record<string, Intl.DateTimeFormatOptions &
+   *  {
+   *    name?: string;
+   *    type?: "year"|"quarter"|"month"|"week"|"day"|"weekday"|"era"|"hour"|"minute"|"second"|"millisecond"|"timeZoneName"|"dayPeriod";
+   *    year?: "numeric"|"2-digit"|"extended-numeric"|"cyclic-narrow"|"cyclic-long"|"cyclic-short"|"related-gregorian";
+   *    quarter?: "numeric"|"narrow"|"long"|"short"|"long-standalone"|"2-digit";
+   *    month?: "numeric"|"narrow"|"long"|"short"|"2-digit";
+   *    week?: "numeric"|"narrow"|"long"|"short"|"2-digit";
+   *    weekday?: "numeric"|"narrow"|"long"|"short"|"abbr"|"2-digit";
+   *    day?: "numeric"|"narrow"|"long"|"short"|"2-digit";
+   *    era?: "narrow"|"long"|"short";
+   *    hour?: "numeric"|"narrow"|"long"|"short"|"2-digit";
+   *    hour12?: boolean;
+   *    hourCycle?: "h23"|"h24"|"h11"|"h12";
+   *    minute?: "numeric"|"2-digit";
+   *    second?: "numeric"|"2-digit";
+   *    millisecond?: "numeric";
+   *    fractionalSecondDigits?: 1|2|3;
+   *    timeZoneName?: "longGeneric"|"shortGeneric"|"longOffset"|"shortOffset"|"long"|"short"|"UTC";
+   *    timeZone?: "longGeneric"|"shortGeneric"|"longOffset"|"shortOffset"|"long"|"short"|"UTC";
+   *    dayPeriod?: "narrow"|"long"|"short";
+   *    supported?: boolean;
+   *  }>
+   * }
    */
   static stringsToFormatMap = {
     /**
@@ -151,7 +174,6 @@ export default class DateHelper {
       hourCycle: "h23",
       minute: "2-digit",
       second: "2-digit",
-      fractionalSecond: null,
       fractionalSecondDigits: 3,
       timeZone: "UTC",
       name: "iso",
@@ -494,7 +516,7 @@ export default class DateHelper {
     /**
      * For use when formatted without other date parts. Use M forms for foratting with other parts.
      * See https://unicode.org/reports/tr35/tr35-dates.html#months_days_quarters_eras
-     * Formats the month name in a "narrow" format; e.g., J, M, D (note that two months can share a narrow name; 
+     * Formats the month name in a "narrow" format; e.g., J, M, D (note that two months can share a narrow name;
      * March and May are both formatted as M)
      * !! Unsupported !!
      */
@@ -560,7 +582,7 @@ export default class DateHelper {
     ww: {
       week: "2-digit",
       name: "week-2-digit",
-      tyoe: "week",
+      type: "week",
       supported: false,
     },
     /**
@@ -571,7 +593,7 @@ export default class DateHelper {
     w: {
       week: "numeric",
       name: "week-numeric",
-      tyoe: "week",
+      type: "week",
       supported: false,
     },
     /**
@@ -581,7 +603,7 @@ export default class DateHelper {
     W: {
       week: "numeric",
       name: "week-month-numeric",
-      tyoe: "week",
+      type: "week",
       supported: false,
     },
     /**
@@ -886,7 +908,6 @@ export default class DateHelper {
      * Formats the number of milliseconds using 3 digits (corresponds to SSS in Unicode TR35); e.g., 001, 012, 235
      */
     fff: {
-      fractionalSecond: null,
       fractionalSecondDigits: 3,
       name: "millisecond-3-digit",
       type: "millisecond",
@@ -895,16 +916,14 @@ export default class DateHelper {
      * Formats the number of decaseconds using 2 digits (corresponds to SSS in Unicode TR35); e.g., 00, 01, 23
      */
     ff: {
-      fractionalSecond: null,
       fractionalSecondDigits: 2,
       name: "millisecond-2-digit",
       type: "millisecond",
     },
     /**
-     * Formats the number of centiseconds using 2 digits (corresponds to SSS in Unicode TR35); e.g., 0, 0, 2
+     * Formats the number of centiseconds using 1 digit (corresponds to SSS in Unicode TR35); e.g., 0, 0, 2
      */
     f: {
-      fractionalSecond: null,
       fractionalSecondDigits: 1,
       name: "millisecond-1-digit",
       type: "millisecond",
@@ -1056,19 +1075,22 @@ export default class DateHelper {
     },
   };
 
+  /** @type {string | string[] | null | undefined} */
   #locales;
+  /** @type {string | string[] | null | undefined} */
   #formats;
+  /** @type {string | null | undefined} */
   #timeZone;
 
   /**
    * Creates a new instance of the DateHelper class, so that options do not need to be passed in every call.
-   * @param locales The locale in which to format the date (must be a valid BCP 47 language tag), or an
+   * @param {string | string[] | null | undefined} locales The locale in which to format the date (must be a valid BCP 47 language tag), or an
    * array of such strings, or undefined or null (to use the browser's default)
-   * @param formats The format in which to format the date (must be a valid format string), or an array of
+   * @param {string | string[] | null | undefined} formats The format in which to format the date (must be a valid format string), or an array of
    * such strings, or undefined or null (to use the locale's default format)
-   * @param timeZone The time zone in which to format the date (must be a valid IANA time zone name, or
+   * @param {string | null | undefined} timeZone The time zone in which to format the date (must be a valid IANA time zone name, or
    * 'UTC', or undefined or null to use 'UTC')
-   * @param logLevel The level of logging to use for this instance (defaults to LogLevel.Error)
+   * @param {number} logLevel The level of logging to use for this instance (defaults to LogLevel.Error)
    */
   constructor(locales, formats, timeZone, logLevel = LogLevel.Error) {
     this.locales = locales;
@@ -1090,7 +1112,7 @@ export default class DateHelper {
 
   /**
    * The locale in which to format dates (must be a valid BCP 47 language tag), or an array of such strings, or undefined or null (to use the browser's default)
-   * @returns {string|string[]|undefined|null} The locale, or an array of such
+   * @returns {string | string[] | null | undefined} The locale, or an array of such
    */
   get locales() {
     return this.#locales;
@@ -1098,7 +1120,10 @@ export default class DateHelper {
   set locales(value) {
     const localeResult = DateHelper.parseLocales(value);
     if (!localeResult.valid) {
-      throw new Error(localeResult.error);
+      throw new Error(
+        localeResult.error ??
+          `Error parsing ${localeResult} as a valid ParseDateHelperOptionResult`,
+      );
     }
     this.#locales = localeResult.value;
   }
@@ -1112,7 +1137,10 @@ export default class DateHelper {
   set formats(value) {
     let formatsResult = DateHelper.parseFormats(value);
     if (!formatsResult.valid) {
-      throw new Error(formatsResult.error);
+      throw new Error(
+        formatsResult.error ??
+          `Error parsing ${formatsResult} as a valid ParseDateHelperOptionResult`,
+      );
     }
     if (this.#formats !== formatsResult.value) {
       this.#formats = formatsResult.value;
@@ -1128,10 +1156,13 @@ export default class DateHelper {
   set timeZone(value) {
     const timeZoneResult = DateHelper.parseTimeZone(value);
     if (!timeZoneResult.valid) {
-      throw new Error(timeZoneResult.error);
+      throw new Error(
+        timeZoneResult.error ??
+          `Error parsing ${timeZoneResult} as a valid ParseDateHelperOptionResult`,
+      );
     }
     if (this.#timeZone !== timeZoneResult.value) {
-      this.#timeZone = timeZoneResult.value;
+      this.#timeZone = typeof timeZoneResult.value === "string" ? timeZoneResult.value : undefined;
     }
   }
   /**
@@ -1145,9 +1176,9 @@ export default class DateHelper {
     options = { ...this.validateOptions(options), format: "y-MM-ddTHH:mm:ss.fffZ" };
     const isoFormat = this.formatDate(new Date(), options);
     if (Logger.LogLevel <= LogLevel.Trace) {
-      console.log(`now(${JSON.stringify(options)})`,  isoFormat);
+      console.log(`now(${JSON.stringify(options)})`, isoFormat);
     }
-    return this.parseDate(isoFormat, options);
+    return this.parseDate(isoFormat, options) ?? new Date();
   }
   /**
    * Returns a Date object representing the current date at midnight with the options given.
@@ -1179,10 +1210,11 @@ export default class DateHelper {
      * @returns {number} The new year value (not the full date)
      */
     y: (date, amount, useUTC = true) =>
-    (typeof date === "object" || date instanceof Date) && useUTC
+      (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCFullYear(date.getUTCFullYear() + amount)
-        : (typeof date === "object" || date instanceof Date) ? 
-            date.setFullYear(date.getFullYear() + amount) : undefined,
+        : typeof date === "object" || date instanceof Date
+          ? date.setFullYear(date.getFullYear() + amount)
+          : undefined,
     /**
      * Adds the given amount of quarters to the month portion of the date
      * @param {Date} date The Date to whose month portion the value will be added
@@ -1193,9 +1225,9 @@ export default class DateHelper {
     q: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMonth(date.getUTCMonth() + amount * 3)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMonth(date.getMonth() + amount * 3) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMonth(date.getMonth() + amount * 3)
+          : undefined,
     /**
      * Adds the given amount to the month portion of the date
      * @param {Date} date The Date to whose month portion the value will be added
@@ -1206,9 +1238,9 @@ export default class DateHelper {
     M: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMonth(date.getUTCMonth() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMonth(date.getMonth() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMonth(date.getMonth() + amount)
+          : undefined,
     /**
      * Adds the given amount to the day portion of the date
      * @param {Date} date The Date to whose day portion the value will be added
@@ -1219,9 +1251,9 @@ export default class DateHelper {
     d: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCDate(date.getUTCDate() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setDate(date.getDate() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setDate(date.getDate() + amount)
+          : undefined,
     /**
      * Adds the given amount of weeks to the day portion of the date
      * @param {Date} date The Date to whose day portion the value will be added
@@ -1232,9 +1264,9 @@ export default class DateHelper {
     w: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCDate(date.getUTCDate() + amount * 7)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setDate(date.getDate() + amount * 7) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setDate(date.getDate() + amount * 7)
+          : undefined,
     /**
      * Adds the given amount to the hour portion of the date
      * @param {Date} date The Date to whose hour portion the value will be added
@@ -1245,9 +1277,9 @@ export default class DateHelper {
     H: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCHours(date.getUTCHours() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setHours(date.getHours() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setHours(date.getHours() + amount)
+          : undefined,
     /**
      * Adds the given amount to the minute portion of the date
      * @param {Date} date The Date to whose minute portion the value will be added
@@ -1258,9 +1290,9 @@ export default class DateHelper {
     m: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMinutes(date.getUTCMinutes() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMinutes(date.getMinutes() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMinutes(date.getMinutes() + amount)
+          : undefined,
     /**
      * Adds the given amount to the second portion of the date
      * @param {Date} date The Date to whose second portion the value will be added
@@ -1271,9 +1303,9 @@ export default class DateHelper {
     s: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCSeconds(date.getUTCSeconds() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setSeconds(date.getSeconds() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setSeconds(date.getSeconds() + amount)
+          : undefined,
     /**
      * Adds the given amount to the millisecond portion of the date
      * @param {Date} date The Date to whose millisecond portion the value will be added
@@ -1284,9 +1316,9 @@ export default class DateHelper {
     f: (date, amount, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMilliseconds(date.getUTCMilliseconds() + amount)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMilliseconds(date.getMilliseconds() + amount) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMilliseconds(date.getMilliseconds() + amount)
+          : undefined,
   };
   /**
    * Maps a date unit to a method that sets that unit on a Date to a value.
@@ -1304,9 +1336,9 @@ export default class DateHelper {
     y: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCFullYear(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setFullYear(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setFullYear(value)
+          : undefined,
     /**
      * Sets the month portion of the date to the given value
      * @param {Date} date The Date whose month portion will be set
@@ -1317,9 +1349,9 @@ export default class DateHelper {
     M: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMonth(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMonth(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMonth(value)
+          : undefined,
     /**
      * Sets the day portion of the date to the given value
      * @param {Date} date The Date whose day portion will be set
@@ -1330,9 +1362,9 @@ export default class DateHelper {
     d: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCDate(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setDate(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setDate(value)
+          : undefined,
     /**
      * Sets the hour portion of the date to the given value
      * @param {Date} date The Date whose hour portion will be set
@@ -1343,9 +1375,9 @@ export default class DateHelper {
     H: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCHours(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setHours(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setHours(value)
+          : undefined,
     /**
      * Sets the minute portion of the date to the given value
      * @param {Date} date The Date whose minute portion will be set
@@ -1356,9 +1388,9 @@ export default class DateHelper {
     m: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMinutes(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMinutes(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMinutes(value)
+          : undefined,
     /**
      * Sets the second portion of the date to the given value
      * @param {Date} date The Date whose second portion will be set
@@ -1369,9 +1401,9 @@ export default class DateHelper {
     s: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCSeconds(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setSeconds(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setSeconds(value)
+          : undefined,
     /**
      * Sets the millisecond portion of the date to the given value
      * @param {Date} date The Date whose millisecond portion will be set
@@ -1382,9 +1414,9 @@ export default class DateHelper {
     f: (date, value, useUTC = true) =>
       (typeof date === "object" || date instanceof Date) && useUTC
         ? date.setUTCMilliseconds(value)
-        : ((typeof date === "object" || date instanceof Date) 
-          ? date.setMilliseconds(value) 
-          : undefined),
+        : typeof date === "object" || date instanceof Date
+          ? date.setMilliseconds(value)
+          : undefined,
   };
   /**
    * Adds a given amount of a unit to a Date.
@@ -1401,24 +1433,18 @@ export default class DateHelper {
   static add(value, amount, unit, useUTC = true) {
     if (!Object.keys(this.unitToAdder).includes(unit)) {
       Logger.warn(
-        `unit passed to DateHelper.add was not in the list; "${unit}" is not one of 'y','q','M','w','d','H','m','s','f'. Returning original value.`
+        `unit passed to DateHelper.add was not in the list; "${unit}" is not one of 'y','q','M','w','d','H','m','s','f'. Returning original value.`,
       );
       return value;
     }
     const newValue =
-      typeof value === "number" ||
-      (typeof value === "object" && value instanceof Date)
+      typeof value === "number" || (typeof value === "object" && value instanceof Date)
         ? new Date(value.valueOf())
         : DateHelper.parseDate(value, {});
     if (unit !== "M") {
       DateHelper.unitToAdder[unit](newValue, amount, useUTC);
     } else {
-      newValue = DateHelper.setClosestDayInMonth(
-        value,
-        value.getMonth() + amount,
-        null,
-        useUTC
-      );
+      newValue = DateHelper.setClosestDayInMonth(value, value.getMonth() + amount, null, useUTC);
     }
     return newValue;
   }
@@ -1432,11 +1458,9 @@ export default class DateHelper {
    * the same as value's, while staying in the same month.
    */
   static setClosestDayInMonth(value, month, targetDay, useUTC = true) {
-    const originalDay =
-      targetDay ?? (useUTC ? value.getUTCDate() : value.getDate());
+    const originalDay = targetDay ?? (useUTC ? value.getUTCDate() : value.getDate());
     const newValue =
-      typeof value === "number" ||
-      (typeof value === "object" && value instanceof Date)
+      typeof value === "number" || (typeof value === "object" && value instanceof Date)
         ? new Date(value.valueOf())
         : DateHelper.parseDate(value, {});
     const newMonth = month === -1 ? 11 : month === 12 ? 0 : month;
@@ -1453,9 +1477,7 @@ export default class DateHelper {
     if (useUTC) {
       if (newValue.getUTCMonth() > month) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the month desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the month desired`,
         );
       }
       while (newValue.getUTCMonth() > month) {
@@ -1469,16 +1491,14 @@ export default class DateHelper {
         Logger.warn(
           `The date set, "${newValue
             .toISOString()
-            .substring(0, 10)}" does not have the day desired (${originalDay})`
+            .substring(0, 10)}" does not have the day desired (${originalDay})`,
         );
         newValue.setUTCDate(originalDay);
       }
     } else {
       if (newValue.getMonth() > month) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the month desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the month desired`,
         );
       }
       while (newValue.getMonth() > month) {
@@ -1492,7 +1512,7 @@ export default class DateHelper {
         Logger.warn(
           `The date set, "${newValue
             .toISOString()
-            .substring(0, 10)}" does not have the day desired (${originalDay})`
+            .substring(0, 10)}" does not have the day desired (${originalDay})`,
         );
         newValue.setDate(originalDay);
       }
@@ -1509,20 +1529,16 @@ export default class DateHelper {
    * the same as value's, while staying in the same year.
    */
   static setClosestDayInYear(value, year, targetDay, useUTC = true) {
-    const originalDay =
-      targetDay ?? (useUTC ? value.getUTCDate() : value.getDate());
+    const originalDay = targetDay ?? (useUTC ? value.getUTCDate() : value.getDate());
     const newValue =
-      typeof value === "number" ||
-      (typeof value === "object" && value instanceof Date)
+      typeof value === "number" || (typeof value === "object" && value instanceof Date)
         ? new Date(value.valueOf())
         : DateHelper.parseDate(value, {});
     DateHelper.unitToSetter["y"](newValue, year, useUTC);
     if (useUTC) {
       if (newValue.getUTCFullYear() > year) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the year desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the year desired`,
         );
       }
       while (newValue.getUTCFullYear() > year) {
@@ -1532,9 +1548,7 @@ export default class DateHelper {
       // March 1, 2021 instead of Feb 2021. This makes it Feb 28, 2021.
       if (newValue.getUTCMonth() > month) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the month desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the month desired`,
         );
       }
       while (newValue.getUTCMonth() > month) {
@@ -1548,16 +1562,14 @@ export default class DateHelper {
         Logger.warn(
           `The date set, "${newValue
             .toISOString()
-            .substring(0, 10)}" does not have the day desired (${originalDay})`
+            .substring(0, 10)}" does not have the day desired (${originalDay})`,
         );
         newValue.setUTCDate(originalDay);
       }
     } else {
       if (newValue.getFullYear() > year) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the year desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the year desired`,
         );
       }
       while (newValue.getFullYear() > year) {
@@ -1565,9 +1577,7 @@ export default class DateHelper {
       }
       if (newValue.getMonth() > month) {
         Logger.warn(
-          `The date set, "${newValue
-            .toISOString()
-            .substring(0, 10)}" is not in the month desired`
+          `The date set, "${newValue.toISOString().substring(0, 10)}" is not in the month desired`,
         );
       }
       while (newValue.getMonth() > month) {
@@ -1581,7 +1591,7 @@ export default class DateHelper {
         Logger.warn(
           `The date set, "${newValue
             .toISOString()
-            .substring(0, 10)}" does not have the day desired (${originalDay})`
+            .substring(0, 10)}" does not have the day desired (${originalDay})`,
         );
         newValue.setDate(originalDay);
       }
@@ -1643,15 +1653,11 @@ export default class DateHelper {
           agg.error = `${agg.error}\n${curResult.error}`;
           return agg;
         },
-        { valid: true, value: [], error: "" }
+        { valid: true, value: [], error: "" },
       );
       return aggregateResult;
     } else if (typeof formats === "string") {
-      if (
-        !Object.keys(DateHelper.stringsToFormatMap).some((k) =>
-          formats.includes(k)
-        )
-      ) {
+      if (!Object.keys(DateHelper.stringsToFormatMap).some((k) => formats.includes(k))) {
         const error = `The format provided, "${formats}", does not contain any valid format strings`;
         Logger.error(error);
         return {
@@ -1659,17 +1665,14 @@ export default class DateHelper {
           error,
         };
       }
-      const unsupportedFormatStrings = Object.keys(
-        DateHelper.stringsToFormatMap
-      ).filter(
-        (k) =>
-          formats.includes(k) &&
-          DateHelper.stringsToFormatMap[k].supported === false
+      const unsupportedFormatStrings = Object.keys(DateHelper.stringsToFormatMap).filter(
+        (k) => formats.includes(k) && DateHelper.stringsToFormatMap[k].supported === false,
       );
       if (unsupportedFormatStrings.length) {
-        const formattedUnsupported = JSON.stringify(
-          unsupportedFormatStrings
-        ).replace(/(\[|\])/g, "");
+        const formattedUnsupported = JSON.stringify(unsupportedFormatStrings).replace(
+          /(\[|\])/g,
+          "",
+        );
         const error = `The format provided, "${formats}", contains some unsupported format strings: ${formattedUnsupported}`;
         Logger.error(error);
         return {
@@ -1705,7 +1708,7 @@ export default class DateHelper {
     ) {
       let monthFormatter = new Intl.DateTimeFormat(locale, { month: width });
       this.#monthNames[locale][width] = Array.from({ length: 12 }, (_, i) =>
-        monthFormatter.format(new Date(2022, i, 1))
+        monthFormatter.format(new Date(2022, i, 1)),
       );
     }
     return this.#monthNames;
@@ -1731,14 +1734,14 @@ export default class DateHelper {
       });
       this.#weekdayNames[locale][width] = Array.from(
         { length: 7 },
-        (_, i) => weekdayFormatter.format(new Date(2022, 9, 2 + i)) // 2022-10-02 was a Sunday
+        (_, i) => weekdayFormatter.format(new Date(2022, 9, 2 + i)), // 2022-10-02 was a Sunday
       );
     }
     return this.#weekdayNames;
   }
   /**
    * Parses locales as BCP47 strings
-   * @param {string|string[]} locales A valid BCP47 string or array of such
+   * @param {string | string[] | null | undefined} locales A valid BCP47 string or array of such
    *  representing the "locales" to use when formatting or parsing dates.
    * @returns {ParseDateHelperOptionResult} an object with possibly three properties;
    *  "valid", a Boolean indicating if the value(s) are correct;
@@ -1748,17 +1751,20 @@ export default class DateHelper {
   static parseLocales(locales) {
     const widths = ["long", "short", "narrow"];
     if (typeof locales === "undefined" || locales === null) {
-      return { valid: true, value: [] };
+      return { valid: true, value: [], error: undefined };
     } else if (Array.isArray(locales)) {
+      /**
+       * @type {ParseDateHelperOptionResult}
+       */
       const aggregateResult = locales.reduce(
         (agg, cur) => {
           const curResult = DateHelper.parseLocales(cur);
-          agg.valid = agg.valid && curResult.valid;
+          agg.valid = Boolean(agg.valid && curResult.valid);
           agg.value = [...agg.value, curResult.value];
           agg.error = `${agg.error}\n${curResult.error}`;
           return agg;
         },
-        { valid: true, value: [], error: "" }
+        { valid: true, value: [], error: "" },
       );
       return aggregateResult;
     } else if (typeof locales === "string") {
@@ -1790,11 +1796,8 @@ export default class DateHelper {
    * "longOffset", among others, as of 2022-11-14)
    */
   static #updateSupportedTimeZoneNames() {
-    const unknownIfSupportedTimeZoneNames = Object.entries(
-      DateHelper.stringsToFormatMap
-    ).filter(
-      ([key, map]) =>
-        (key.includes("v") || key.includes("Z")) && !("supported" in map)
+    const unknownIfSupportedTimeZoneNames = Object.entries(DateHelper.stringsToFormatMap).filter(
+      ([key, map]) => (key.includes("v") || key.includes("Z")) && !("supported" in map),
     );
     for (let tz of unknownIfSupportedTimeZoneNames) {
       let supported = false;
@@ -1803,9 +1806,7 @@ export default class DateHelper {
         const _ = new Intl.DateTimeFormat([], { timeZoneName });
         supported = true;
       } catch {
-        Logger.warn(
-          `Time zone cannot be formatted using "${tz[0]}" (${timeZoneName})`
-        );
+        Logger.warn(`Time zone cannot be formatted using "${tz[0]}" (${timeZoneName})`);
       }
       DateHelper.stringsToFormatMap[tz[0]] = {
         ...tz[1],
@@ -1826,10 +1827,7 @@ export default class DateHelper {
    */
   static parseTimeZone(timeZone) {
     DateHelper.#updateSupportedTimeZoneNames();
-    if (
-      typeof timeZone === "undefined" ||
-      (typeof timeZone === "object" && timeZone === null)
-    ) {
+    if (typeof timeZone === "undefined" || (typeof timeZone === "object" && timeZone === null)) {
       return { valid: true, value: "UTC" };
     } else if (
       typeof timeZone === "string" &&
@@ -1838,9 +1836,7 @@ export default class DateHelper {
       return { valid: true, value: timeZone.trim() };
     } else if (
       Array.isArray(timeZone) &&
-      tzdb.some((tz) =>
-        timeZone.some((tZ) => tz.timeZoneName.trim() === tZ.trim())
-      )
+      tzdb.some((tz) => timeZone.some((tZ) => tz.timeZoneName.trim() === tZ.trim()))
     ) {
       return { valid: true, value: timeZone };
     }
@@ -1895,7 +1891,7 @@ export default class DateHelper {
   static getProbableClientTimeZoneName(locales) {
     const localesResult = DateHelper.parseLocales(locales);
     if (!localesResult.valid) {
-      throw new Error(localesResult.error);
+      throw new Error(localesResult.error ?? "Locale error");
     }
     const defaultFormat = new Intl.DateTimeFormat(localesResult.value);
     const options = defaultFormat.resolvedOptions();
@@ -1918,9 +1914,7 @@ export default class DateHelper {
     // Note: the negative symbol below does not map to the standard US keyboard layout; it is
     // Unicode 2212(hex) MINUS SIGN.
     const offset = `${rawOffsetIsNegative ? "+" : "−"}${rawOffsetFormatted}`;
-    return tzdb.filter(
-      (tz) => tz.utcOffsetStandard === offset || tz.utcOffsetDST === offset
-    );
+    return tzdb.filter((tz) => tz.utcOffsetStandard === offset || tz.utcOffsetDST === offset);
   }
   /**
    * Same as getPossibleClientTimeZones, only just the names
@@ -1946,7 +1940,7 @@ export default class DateHelper {
     const defaultFormat = new Intl.DateTimeFormat(locale, { timeZone });
     const parts = defaultFormat.formatToParts(Date.now());
     const formatParts = new DatePartCollection(
-      parts.map((part) => this.#guessDatePartFromFormatPart(part))
+      parts.map((part) => this.#guessDatePartFromFormatPart(part)),
     );
     return formatParts;
   }
@@ -2055,9 +2049,7 @@ export default class DateHelper {
    */
   static getDefaultFormatForLocale(locales, style = "short") {
     if (![undefined, null, "full", "long", "medium", "short"].includes(style)) {
-      throw new Error(
-        `style must be undefined, null, "full", "long", "medium", or "short"`
-      );
+      throw new Error(`style must be undefined, null, "full", "long", "medium", or "short"`);
     }
     style ??= "short";
     const localesResult = DateHelper.parseLocales(locales);
@@ -2239,7 +2231,7 @@ export default class DateHelper {
         value.getUTCHours(),
         value.getUTCMinutes(),
         value.getUTCSeconds(),
-        value.getUTCMilliseconds()
+        value.getUTCMilliseconds(),
       );
     }
     return new Date(
@@ -2249,7 +2241,7 @@ export default class DateHelper {
       value.getHours(),
       value.getMinutes(),
       value.getSeconds(),
-      value.getMilliseconds()
+      value.getMilliseconds(),
     );
   }
   /**
@@ -2267,7 +2259,7 @@ export default class DateHelper {
         value.getUTCHours(),
         value.getUTCMinutes(),
         value.getUTCSeconds(),
-        value.getUTCMilliseconds()
+        value.getUTCMilliseconds(),
       );
     }
     return new Date(
@@ -2277,7 +2269,7 @@ export default class DateHelper {
       value.getHours(),
       value.getMinutes(),
       value.getSeconds(),
-      value.getMilliseconds()
+      value.getMilliseconds(),
     );
   }
   /**
@@ -2305,7 +2297,7 @@ export default class DateHelper {
         value.getUTCHours(),
         value.getUTCMinutes(),
         value.getUTCSeconds(),
-        value.getUTCMilliseconds()
+        value.getUTCMilliseconds(),
       );
     }
     return new Date(
@@ -2315,7 +2307,7 @@ export default class DateHelper {
       value.getHours(),
       value.getMinutes(),
       value.getSeconds(),
-      value.getMilliseconds()
+      value.getMilliseconds(),
     );
   }
   /**
@@ -2334,7 +2326,7 @@ export default class DateHelper {
         value.getUTCHours(),
         value.getUTCMinutes(),
         value.getUTCSeconds(),
-        value.getUTCMilliseconds()
+        value.getUTCMilliseconds(),
       );
     }
     return new Date(
@@ -2344,7 +2336,7 @@ export default class DateHelper {
       value.getHours(),
       value.getMinutes(),
       value.getSeconds(),
-      value.getMilliseconds()
+      value.getMilliseconds(),
     );
   }
   /**
@@ -2358,7 +2350,7 @@ export default class DateHelper {
       numericYear = parseInt(year, 10);
       if (isNaN(numericYear)) {
         throw new Error(
-          `"${year}" cannot be parsed as a number, which is required for the year argument.`
+          `"${year}" cannot be parsed as a number, which is required for the year argument.`,
         );
       }
     }
@@ -2389,14 +2381,15 @@ export default class DateHelper {
     dateGranularityCustom = (a, b) => ({
       amount: a.valueOf() - b.valueOf(),
       unit: "ms",
-    })
+    }),
   ) {
     const diff = Math.abs(b.valueOf() - a.valueOf());
-    const customResult = typeof dateGranularityCustom === "function" ? 
-        dateGranularityCustom(a, b) : 
-        typeof dateGranularityCustom === "object" && dateGranularityCustom !== null ? 
-            dateGranularityCustom : 
-            null;
+    const customResult =
+      typeof dateGranularityCustom === "function"
+        ? dateGranularityCustom(a, b)
+        : typeof dateGranularityCustom === "object" && dateGranularityCustom !== null
+          ? dateGranularityCustom
+          : null;
     switch (dateGranularity) {
       case DateComparisonGranularity.Custom:
         return customResult;
@@ -2441,9 +2434,7 @@ export default class DateHelper {
         if (aYear === bYear && aMonth === bMonth) {
           // e.g. a like 2021-01-01; b like 2021-01-23
           // -1 to take into account partial days (added back afterwards)
-          monthDays = [
-            { month: aMonth, dayCount: Math.abs(bDate - aDate) - 1 },
-          ];
+          monthDays = [{ month: aMonth, dayCount: Math.abs(bDate - aDate) - 1 }];
         } else if (aYear === bYear && bMonth - aMonth === 1) {
           // e.g. a like 2021-01-01; b like 2021-02-23
           // -1 to take into account partial days (added back afterwards)
@@ -2466,10 +2457,7 @@ export default class DateHelper {
           // e.g. a like 2021-01-01; b like 2021-04-23
           // -1 to take into account partial days (added back afterwards)
           // Make an array of months with the number of days in that month that were used
-          monthDays = Array.from(
-            { length: bMonth - aMonth },
-            (_, i) => aMonth + i
-          ).map((m) =>
+          monthDays = Array.from({ length: bMonth - aMonth }, (_, i) => aMonth + i).map((m) =>
             m === aMonth
               ? // For the month of the earlier date passed in, that's the number of days from that date to
                 // the end of that month.
@@ -2478,40 +2466,31 @@ export default class DateHelper {
                   dayCount: new Date(aYear, m + 1, 0).getDate() - aDate,
                 }
               : m === bMonth
-              ? // For the month of the later date passed in, that's the date of that month
-                { month: m, dayCount: bDate - 1 }
-              : // For every other year and month, it's the total number of days in the month for that year
-                { month: m, dayCount: new Date(aYear, m + 1, 0).getDate() }
+                ? // For the month of the later date passed in, that's the date of that month
+                  { month: m, dayCount: bDate - 1 }
+                : // For every other year and month, it's the total number of days in the month for that year
+                  { month: m, dayCount: new Date(aYear, m + 1, 0).getDate() },
           );
         } else if (aYear === bYear && aMonth > bMonth) {
           // e.g. a like 2021-04-01; b like 2021-01-23
-          monthDays = Array.from(
-            { length: aMonth - bMonth },
-            (_, i) => bMonth + i
-          ).map((m) =>
+          monthDays = Array.from({ length: aMonth - bMonth }, (_, i) => bMonth + i).map((m) =>
             m === bMonth
               ? {
                   month: m,
                   dayCount: new Date(bYear, m + 1, 0).getDate() - bDate,
                 }
               : m === aMonth
-              ? { month: m, dayCount: aDate - 1 }
-              : { month: m, dayCount: new Date(bYear, m + 1, 0).getDate() }
+                ? { month: m, dayCount: aDate - 1 }
+                : { month: m, dayCount: new Date(bYear, m + 1, 0).getDate() },
           );
         } else if (bYear > aYear) {
           // e.g. a like 2021-04-01; b like 2023-01-23
-          monthDays = Array.from(
-            { length: bYear - aYear + 1 },
-            (_, i) => aYear + i
-          )
+          monthDays = Array.from({ length: bYear - aYear + 1 }, (_, i) => aYear + i)
             .map((y) => {
               if (y === aYear) {
                 // If it's the year of the earlier date passed in, get the year, plus an array of months
                 // from the month passed in to the end of that year
-                return [
-                  y,
-                  Array.from({ length: 12 - aMonth }, (_, i) => aMonth + i),
-                ];
+                return [y, Array.from({ length: 12 - aMonth }, (_, i) => aMonth + i)];
               } else if (y !== aYear && y !== bYear) {
                 // If it's one of the years between the earlier and later dates, get the year, plus an
                 // array of 12 months.
@@ -2520,20 +2499,13 @@ export default class DateHelper {
 
               // Otherwise, it's the year of the later date passed in, so get the yet, plus an array of
               // months from the month of the later date to the beginning of the year.
-              return [
-                y,
-                Array.from({ length: bMonth + 1 }, (_, i) => bMonth - i),
-              ];
+              return [y, Array.from({ length: bMonth + 1 }, (_, i) => bMonth - i)];
             })
             // Reorganize data from a 2d array to a flat array of objects with year and month properties
-            .map(([year, months]) => [
-              ...months.map((month) => ({ year, month })),
-            ])
+            .map(([year, months]) => months.map((month) => ({ year, month })))
             .flat()
             // Sort the array of object by year then month
-            .sort((x, y) =>
-              x.year - y.year === 0 ? x.month - y.month : x.year - y.year
-            )
+            .sort((x, y) => (x.year - y.year === 0 ? x.month - y.month : x.year - y.year))
             // Then add a dayCount property counting the number of days used in that year and month
             .map(({ y, m }) =>
               y === aYear && m === aMonth
@@ -2545,43 +2517,30 @@ export default class DateHelper {
                     dayCount: new Date(aYear, m + 1, 0).getDate() - aDate,
                   }
                 : y === bYear && m === bMonth
-                ? // For the month of the second date passed in, that's the date of that month
-                  { year: y, month: m, dayCount: bDate - 1 }
-                : // For every other year and month, it's the total number of days in the month for that year
-                  {
-                    year: y,
-                    month: m,
-                    dayCount: new Date(y, m + 1, 0).getDate(),
-                  }
+                  ? // For the month of the second date passed in, that's the date of that month
+                    { year: y, month: m, dayCount: bDate - 1 }
+                  : // For every other year and month, it's the total number of days in the month for that year
+                    {
+                      year: y,
+                      month: m,
+                      dayCount: new Date(y, m + 1, 0).getDate(),
+                    },
             );
         } else if (aYear > bYear) {
           // e.g. a like 2023-04-01; b like 2021-01-23
-          monthDays = Array.from(
-            { length: aYear - bYear + 1 },
-            (_, i) => bYear + i
-          )
+          monthDays = Array.from({ length: aYear - bYear + 1 }, (_, i) => bYear + i)
             .map((y) => {
               if (y === bYear) {
-                return [
-                  y,
-                  Array.from({ length: 12 - bMonth }, (_, i) => bMonth + i),
-                ];
+                return [y, Array.from({ length: 12 - bMonth }, (_, i) => bMonth + i)];
               } else if (y !== aYear && y !== bYear) {
                 return [y, Array.from({ length: 12 }, (_, i) => i)];
               }
 
-              return [
-                y,
-                Array.from({ length: aMonth + 1 }, (_, i) => aMonth - i),
-              ];
+              return [y, Array.from({ length: aMonth + 1 }, (_, i) => aMonth - i)];
             })
-            .map(([year, months]) => [
-              ...months.map((month) => ({ year, month })),
-            ])
+            .map(([year, months]) => months.map((month) => ({ year, month })))
             .flat()
-            .sort((x, y) =>
-              x.year - y.year === 0 ? x.month - y.month : x.year - y.year
-            )
+            .sort((x, y) => (x.year - y.year === 0 ? x.month - y.month : x.year - y.year))
             .map(({ y, m }) =>
               y === bYear && m === bMonth
                 ? {
@@ -2590,12 +2549,12 @@ export default class DateHelper {
                     dayCount: new Date(bYear, m + 1, 0).getDate() - bDate,
                   }
                 : y === aYear && m === aMonth
-                ? { year: y, month: m, dayCount: aDate - 1 }
-                : {
-                    year: y,
-                    month: m,
-                    dayCount: new Date(y, m + 1, 0).getDate(),
-                  }
+                  ? { year: y, month: m, dayCount: aDate - 1 }
+                  : {
+                      year: y,
+                      month: m,
+                      dayCount: new Date(y, m + 1, 0).getDate(),
+                    },
             );
         }
         // Got total number of days, need to add on number of ms difference
@@ -2603,56 +2562,22 @@ export default class DateHelper {
         // Creates four variables with the number of milliseconds from one of the Dates specified to midnight of the same day,
         // and to midnight of the next day. BOD = Beginning of Day = midnight on the date given. EOD = End of Day = midnight on the next day.
         const aTimeFromBOD =
-          a.valueOf() -
-          new Date(
-            a.getFullYear(),
-            a.getMonth(),
-            a.getDate(),
-            0,
-            0,
-            0,
-            0
-          ).valueOf();
+          a.valueOf() - new Date(a.getFullYear(), a.getMonth(), a.getDate(), 0, 0, 0, 0).valueOf();
         const aTimeToEOD =
-          new Date(
-            a.getFullYear(),
-            a.getMonth(),
-            a.getDate() + 1,
-            0,
-            0,
-            0,
-            0
-          ).valueOf() - a.valueOf();
+          new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1, 0, 0, 0, 0).valueOf() -
+          a.valueOf();
         const bTimeFromBOD =
-          b.valueOf() -
-          new Date(
-            b.getFullYear(),
-            b.getMonth(),
-            b.getDate(),
-            0,
-            0,
-            0,
-            0
-          ).valueOf();
+          b.valueOf() - new Date(b.getFullYear(), b.getMonth(), b.getDate(), 0, 0, 0, 0).valueOf();
         const bTimeToEOD =
-          new Date(
-            b.getFullYear(),
-            b.getMonth(),
-            b.getDate() + 1,
-            0,
-            0,
-            0,
-            0
-          ).valueOf() - b.valueOf();
+          new Date(b.getFullYear(), b.getMonth(), b.getDate() + 1, 0, 0, 0, 0).valueOf() -
+          b.valueOf();
         if (a.valueOf() > b.valueOf()) {
           addOnTime = aTimeFromBOD + bTimeToEOD;
         } else if (a.valueOf() < b.valueOf()) {
           addOnTime = aTimeToEOD + bTimeFromBOD;
         }
         monthDays = monthDays.map(({ dayCount, month, year }) => ({
-          totalMs:
-            new Date(year ?? aYear, month + 1, 0).getDate() *
-            DateHelper.msPerDay,
+          totalMs: new Date(year ?? aYear, month + 1, 0).getDate() * DateHelper.msPerDay,
           year: year ?? aYear,
           ms: dayCount * DateHelper.msPerDay,
           month,
@@ -2662,18 +2587,15 @@ export default class DateHelper {
         // b) it seemed like a good idea at the time.
         return {
           amount: monthDays.reduce(
-            (agg, cur, idx) =>
-              agg + (cur.ms + (idx === 0 ? addOnTime : 0)) / cur.totalMs,
-            0
+            (agg, cur, idx) => agg + (cur.ms + (idx === 0 ? addOnTime : 0)) / cur.totalMs,
+            0,
           ),
           unit: DateComparisonGranularity.Month,
         };
       }
       case DateComparisonGranularity.Quarter:
         return {
-          amount:
-            DateHelper.diffDates(a, b, DateComparisonGranularity.Month).amount /
-            3,
+          amount: DateHelper.diffDates(a, b, DateComparisonGranularity.Month).amount / 3,
           unit: DateComparisonGranularity.Quarter,
         };
       case DateComparisonGranularity.Year: {
@@ -2688,8 +2610,8 @@ export default class DateHelper {
           bYear > aYear
             ? Array.from({ length: bYear - aYear + 1 }, (_, i) => aYear + i)
             : bYear === aYear
-            ? [bYear]
-            : Array.from({ length: aYear - bYear + 1 }, (_, i) => bYear + i);
+              ? [bYear]
+              : Array.from({ length: aYear - bYear + 1 }, (_, i) => bYear + i);
         const hasLeap = years.some((y) => isLeap(y));
         if (!hasLeap) {
           return {
@@ -2714,48 +2636,37 @@ export default class DateHelper {
                       0,
                       0,
                       0,
-                      0
+                      0,
                     ).toISOString()}"`,
-                    amt: DateHelper.diffDates(
-                      a,
-                      new Date(aYear + 1, 0, 1, 0, 0, 0, 0)
-                    ).amount,
+                    amt: DateHelper.diffDates(a, new Date(aYear + 1, 0, 1, 0, 0, 0, 0)).amount,
                     count:
-                      DateHelper.diffDates(
-                        a,
-                        new Date(aYear + 1, 0, 1, 0, 0, 0, 0)
-                      ).amount / ms,
+                      DateHelper.diffDates(a, new Date(aYear + 1, 0, 1, 0, 0, 0, 0)).amount / ms,
                   }
                 : year === bYear
-                ? {
-                    year,
-                    ms,
-                    message: `diff "${new Date(
-                      bYear - 1,
-                      11,
-                      32,
-                      0,
-                      0,
-                      0,
-                      0
-                    ).toISOString()}" and "${b.toISOString()}"`,
-                    amt: DateHelper.diffDates(
-                      new Date(bYear - 1, 11, 32, 0, 0, 0, 0),
-                      b
-                    ).amount,
-                    count:
-                      DateHelper.diffDates(
-                        new Date(bYear - 1, 11, 32, 0, 0, 0, 0),
-                        b
-                      ).amount / ms,
-                  }
-                : {
-                    year,
-                    ms,
-                    message: "whole year",
-                    amt: ms,
-                    count: ms / ms,
-                  }
+                  ? {
+                      year,
+                      ms,
+                      message: `diff "${new Date(
+                        bYear - 1,
+                        11,
+                        32,
+                        0,
+                        0,
+                        0,
+                        0,
+                      ).toISOString()}" and "${b.toISOString()}"`,
+                      amt: DateHelper.diffDates(new Date(bYear - 1, 11, 32, 0, 0, 0, 0), b).amount,
+                      count:
+                        DateHelper.diffDates(new Date(bYear - 1, 11, 32, 0, 0, 0, 0), b).amount /
+                        ms,
+                    }
+                  : {
+                      year,
+                      ms,
+                      message: "whole year",
+                      amt: ms,
+                      count: ms / ms,
+                    },
             );
           return {
             amount: yearCounts.reduce((agg, cur) => agg + cur.count, 0),
@@ -2820,8 +2731,7 @@ export default class DateHelper {
   static isBeforeDay(a, b) {
     return (
       a.getFullYear() < b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && 
-        a.getMonth() < b.getMonth()) ||
+      (a.getFullYear() === b.getFullYear() && a.getMonth() < b.getMonth()) ||
       (a.getFullYear() === b.getFullYear() &&
         a.getMonth() === b.getMonth() &&
         a.getDate() < b.getDate())
@@ -2847,8 +2757,7 @@ export default class DateHelper {
   static isAfterDay(a, b) {
     return (
       a.getFullYear() > b.getFullYear() ||
-      (a.getFullYear() === b.getFullYear() && 
-        a.getMonth() > b.getMonth()) ||
+      (a.getFullYear() === b.getFullYear() && a.getMonth() > b.getMonth()) ||
       (a.getFullYear() === b.getFullYear() &&
         a.getMonth() === b.getMonth() &&
         a.getDate() > b.getDate())
@@ -2880,11 +2789,7 @@ export default class DateHelper {
    */
   static makeSingleDimArray(arr) {
     let value = Array.isArray(arr) ? arr : [arr];
-    while (
-      Array.isArray(value) &&
-      value.length &&
-      value.some((item) => Array.isArray(item))
-    ) {
+    while (Array.isArray(value) && value.length && value.some((item) => Array.isArray(item))) {
       value = value.flat();
     }
 
@@ -2918,10 +2823,7 @@ export default class DateHelper {
           part.type = DateHelper.stringsToFormatMap[f].type;
           part.field = f;
           part.index = formatted.indexOf(f);
-          part.length = Math.max(
-            f.length,
-            part[part.type]?.toString().includes("2") ? 2 : 0
-          );
+          part.length = Math.max(f.length, part[part.type]?.toString().includes("2") ? 2 : 0);
           result.add(part, false);
           formatted = formatted.replace(f, "_".repeat(f.length));
         } else if (f === "iso") {
@@ -2998,9 +2900,7 @@ export default class DateHelper {
     }
 
     const literalsPass0 = [...formatted];
-    const literalsPass1 = literalsPass0.map((char, index) =>
-      char === "_" ? null : [index, char]
-    );
+    const literalsPass1 = literalsPass0.map((char, index) => (char === "_" ? null : [index, char]));
     const literalsPass2 = literalsPass1.filter((item) => item != null);
     const literalsPass3 = literalsPass2.reduce(
       (agg, [index, value], idx, arr) => [
@@ -3008,13 +2908,12 @@ export default class DateHelper {
         arr[idx - 1]?.[0] === index - 1
           ? [index, `${arr[idx - 1][1]}${value}`]
           : arr[idx + 1]?.[0] === index + 1
-          ? undefined
-          : !(arr[idx - 1]?.[0] === index - 1) &&
-            !(arr[idx + 1]?.[0] === index + 1)
-          ? [index, value]
-          : undefined,
+            ? undefined
+            : !(arr[idx - 1]?.[0] === index - 1) && !(arr[idx + 1]?.[0] === index + 1)
+              ? [index, value]
+              : undefined,
       ],
-      []
+      [],
     );
     const literalsPass4 = literalsPass3.filter((f) => f !== undefined);
     const literalsPass5 = literalsPass4.map(([index, value], idx) => ({
@@ -3022,7 +2921,7 @@ export default class DateHelper {
       name: `literal${idx}`,
       index,
       value,
-      length: value?.toString()?.length
+      length: value?.toString()?.length,
     }));
 
     const literals = literalsPass5.map((literal) => new DatePart(literal));
@@ -3059,10 +2958,7 @@ export default class DateHelper {
     let value = null;
     // v8 and others require the entire time to be formatted to override individual
     // elements of the time, so this code fills in the higher units of time.
-    if (
-      partOptions.hasOwnProperty("minute") &&
-      !partOptions.hasOwnProperty("hour")
-    ) {
+    if (partOptions.hasOwnProperty("minute") && !partOptions.hasOwnProperty("hour")) {
       partOptions.hour = partOptions.minute;
       partOptions.hour12 = partOptions.hour !== "2-digit";
     }
@@ -3093,12 +2989,8 @@ export default class DateHelper {
     }
     const formatter = new Intl.DateTimeFormat(locale, dateTimeFormatOption);
     const formattedParts = formatter.formatToParts(date);
-    const partType =
-      partOptions.type === "millisecond"
-        ? "fractionalSecond"
-        : partOptions.type;
-    let optionName =
-      partType === "fractionalSecond" ? "fractionalSecondDigits" : partType;
+    const partType = partOptions.type === "millisecond" ? "fractionalSecond" : partOptions.type;
+    let optionName = partType === "fractionalSecond" ? "fractionalSecondDigits" : partType;
     let option = partOptions[optionName];
     const resolvedOptions = formatter.resolvedOptions();
     let resolvedOption = resolvedOptions[optionName];
@@ -3132,11 +3024,7 @@ export default class DateHelper {
         value = value.padStart(2, "0");
       } else if (resolvedOption === "2-digit" && option === "numeric") {
         value = parseInt(value).toString();
-      } else if (
-        resolvedOption === "h24" &&
-        option === "h23" &&
-        value === "24"
-      ) {
+      } else if (resolvedOption === "h24" && option === "h23" && value === "24") {
         value = "00";
       }
     }
@@ -3177,9 +3065,7 @@ export default class DateHelper {
         Logger.warn(
           `Unable to format part "${
             part.name
-          }" for date "${date.toISOString()}" using options "${JSON.stringify(
-            options
-          )}".`
+          }" for date "${date.toISOString()}" using options "${JSON.stringify(options)}".`,
         );
       }
     }
@@ -3211,13 +3097,7 @@ export default class DateHelper {
         debugger;
       }
       if (!part.setter) {
-        Logger.error(
-          `Could not find a setter for the part ${JSON.stringify(
-            part,
-            null,
-            2
-          )}`
-        );
+        Logger.error(`Could not find a setter for the part ${JSON.stringify(part, null, 2)}`);
         return { success: false };
       }
       part.setter(date, +partValue, options.timeZone === "UTC");
@@ -3236,9 +3116,7 @@ export default class DateHelper {
             names = DateHelper.#weekdayNames?.[locale]?.[form] ?? [];
             break;
         }
-        const namedPartValue = names.indexOf(
-          partValue ?? value.slice(part.index, part.end)
-        );
+        const namedPartValue = names.indexOf(partValue ?? value.slice(part.index, part.end));
         if (namedPartValue > -1) {
           part.setter(date, namedPartValue, options.timeZone === "UTC");
           return { success: true, value: namedPartValue };
@@ -3246,16 +3124,16 @@ export default class DateHelper {
           Logger.warn(
             `The ${part.name} portion, "${value.slice(
               part.index,
-              part.end
-            )}" was not able to be parsed as a ${partType} name`
+              part.end,
+            )}" was not able to be parsed as a ${partType} name`,
           );
         }
       } else {
         Logger.warn(
           `The ${part.name} portion, "${value.slice(
             part.index,
-            part.end
-          )}" was not able to be parsed as a number; #trySetDatePartFromPart`
+            part.end,
+          )}" was not able to be parsed as a number; #trySetDatePartFromPart`,
         );
       }
     }
@@ -3271,16 +3149,12 @@ export default class DateHelper {
    */
   static #getPartFromValue(value, part, options) {
     if (!part || part.index == null || isNaN(part.index)) {
-      const error = `The part specified, ${
-        part ? JSON.stringify(part) : part
-      }, is not valid`;
+      const error = `The part specified, ${part ? JSON.stringify(part) : part}, is not valid`;
       Logger.error(error);
       throw new Error(error);
     }
     let makesSense = !/[^\p{L}\p{N}]/gu.test(value.slice(part.index, part.end));
-    let partValue = value
-      .slice(part.index, part.end)
-      .replace(/[^\p{L}\p{N}]/gu, "");
+    let partValue = value.slice(part.index, part.end).replace(/[^\p{L}\p{N}]/gu, "");
     if (makesSense && part.type === "year") {
       if (
         Array.isArray(options.locale) &&
@@ -3288,10 +3162,7 @@ export default class DateHelper {
       ) {
         makesSense = makesSense && +partValue > 1800;
       }
-      if (
-        typeof options.locale === "string" &&
-        !options.locale.includes("calendar")
-      ) {
+      if (typeof options.locale === "string" && !options.locale.includes("calendar")) {
         makesSense = makesSense && +partValue > 1800;
       }
       while (!makesSense) {
@@ -3300,18 +3171,13 @@ export default class DateHelper {
           !/[^\p{L}\p{N}]/gu.test(value.slice(part.index, part.end)) &&
           +value.slice(part.index, part.end) > 1800;
       }
-      partValue = value
-        .slice(part.index, part.end)
-        .replace(/[^\p{L}\p{N}]/gu, "");
+      partValue = value.slice(part.index, part.end).replace(/[^\p{L}\p{N}]/gu, "");
     }
 
     if (!makesSense) {
       Logger.warn(
         `The part requested, ${part.name}, does not seem to fit at the` +
-          ` index and length provided. What was pulled: "${value.slice(
-            part.index,
-            part.end
-          )}"`
+          ` index and length provided. What was pulled: "${value.slice(part.index, part.end)}"`,
       );
     }
     return partValue;
@@ -3383,7 +3249,7 @@ export default class DateHelper {
     } else {
       return this.#getGregorianYearFromJapaneseEraAndDate(
         this.#japaneseShortEraToNarrowEra.get(era),
-        date
+        date,
       );
     }
   }
@@ -3426,9 +3292,7 @@ export default class DateHelper {
     const yearPart = parts.getByType("year");
     const eraLengthDiff = eraLength - eraPart.length;
     if (eraLengthDiff !== 0) {
-      for (const partAfterEra of parts.filter(
-        (part) => part.index > eraPart.index
-      )) {
+      for (const partAfterEra of parts.filter((part) => part.index > eraPart.index)) {
         partAfterEra.index -= eraLengthDiff;
       }
     }
@@ -3439,9 +3303,7 @@ export default class DateHelper {
     const year = this.#getPartFromValue(value, yearPart, options);
     const yearLengthDiff = yearLength - yearPart.length;
     if (yearLengthDiff !== 0) {
-      for (const partAfterYear of parts.filter(
-        (part) => part.index > yearPart.index
-      )) {
+      for (const partAfterYear of parts.filter((part) => part.index > yearPart.index)) {
         partAfterYear.index -= yearLengthDiff;
       }
     }
@@ -3449,9 +3311,7 @@ export default class DateHelper {
     const month = this.#getPartFromValue(value, monthPart, options);
     const monthLengthDiff = monthLength - monthPart.length;
     if (monthLengthDiff !== 0) {
-      for (const partAfterMonth of parts.filter(
-        (part) => part.index > monthPart.index
-      )) {
+      for (const partAfterMonth of parts.filter((part) => part.index > monthPart.index)) {
         partAfterMonth.index -= monthLengthDiff;
       }
       dayPart.end = value.length;
@@ -3487,15 +3347,13 @@ export default class DateHelper {
       if (i === 0) {
         lastIndex = part.index;
         if (lastIndex !== 0) {
-          Logger.warn(
-            `The first part, ${part.name}, does not have an index of 0...`
-          );
+          Logger.warn(`The first part, ${part.name}, does not have an index of 0...`);
         }
         lastEnd = part.end;
       } else {
         if (part.index !== lastEnd) {
           Logger.warn(
-            `The part ${part.name} has an index, ${part.index}, that is not equal to the previous part's ending index ${lastEnd}; resetting to that value`
+            `The part ${part.name} has an index, ${part.index}, that is not equal to the previous part's ending index ${lastEnd}; resetting to that value`,
           );
           part.index = lastEnd;
         }
@@ -3503,7 +3361,7 @@ export default class DateHelper {
           Logger.warn(
             `The part ${part.name} has an invalid length of ${
               part.length
-            }; resetting to ${part.value?.length ?? 1}`
+            }; resetting to ${part.value?.length ?? 1}`,
           );
           part.length = part.value?.length ?? 1; // default length to 1
         }
@@ -3526,9 +3384,7 @@ export default class DateHelper {
     // and a day, I'd already know the weekday, so what if the parsed one is different? If I
     // get a year, a month, and a weekday, I'd need a week number to know what day it is,
     // and there currently is no token for week number.
-    const nonAlphaNumChars = new Set(
-      [...value].filter((c) => /[^\p{L}\p{N}]/u.test(c))
-    );
+    const nonAlphaNumChars = new Set([...value].filter((c) => /[^\p{L}\p{N}]/u.test(c)));
     const indexesOfNonAlphaNumChars = [...value]
       .map((c, i) => (nonAlphaNumChars.has(c) ? i : null))
       .filter((i) => i !== null);
@@ -3548,11 +3404,7 @@ export default class DateHelper {
       parts.hasType("era") &&
       parts.hasType("year")
     ) {
-      const gregorianYear = this.#getGregorianYearFromJapaneseEraAndYear(
-        value,
-        parts,
-        options
-      );
+      const gregorianYear = this.#getGregorianYearFromJapaneseEraAndYear(value, parts, options);
       // This should cover several common formats for Japanese calendar:
       // Gy/M/d
       // Gy/MM/dd
@@ -3580,23 +3432,16 @@ export default class DateHelper {
     const yearPart = parts.getByType("year");
     if (!yearPart) {
       Logger.warn(
-        `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`
+        `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`,
       );
     } else {
-      const yearPartSetResult = DateHelper.#trySetDatePartFromPart(
-        value,
-        yearPart,
-        date,
-        options
-      );
+      const yearPartSetResult = DateHelper.#trySetDatePartFromPart(value, yearPart, date, options);
       if (!yearPartSetResult.success) {
         Logger.warn(
-          `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`
+          `Did not set the year portion of the date in "${value}", keeping as ${date.getFullYear()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the year ${yearPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the year ${yearPartSetResult.value}`);
       }
     }
     const monthPart = parts.getByType("month");
@@ -3604,14 +3449,14 @@ export default class DateHelper {
       Logger.warn(
         `Did not set the month portion of the date in "${value}", keeping as ${date.getMonth()} (${
           date.getMonth() + 1
-        })...`
+        })...`,
       );
     } else {
       const monthPartSetResult = DateHelper.#trySetDatePartFromPart(
         value,
         monthPart,
         date,
-        options
+        options,
       );
       if (!monthPartSetResult.success) {
         // map month names
@@ -3625,124 +3470,102 @@ export default class DateHelper {
           Logger.warn(
             `The month portion, "${value.slice(
               monthPart.index,
-              monthPart.end
-            )}" was not able to be parsed as a month name`
+              monthPart.end,
+            )}" was not able to be parsed as a month name`,
           );
         }
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the month ${monthPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the month ${monthPartSetResult.value}`);
       }
     }
     const dayPart = parts.getByType("day");
     if (!dayPart) {
       Logger.warn(
-        `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`
+        `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`,
       );
     } else {
-      const dayPartSetResult = DateHelper.#trySetDatePartFromPart(
-        value,
-        dayPart,
-        date,
-        options
-      );
+      const dayPartSetResult = DateHelper.#trySetDatePartFromPart(value, dayPart, date, options);
       if (!dayPartSetResult.success) {
         Logger.warn(
-          `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`
+          `Did not set the day portion of the date in "${value}", keeping as ${date.getDate()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the day ${dayPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the day ${dayPartSetResult.value}`);
       }
     }
     const hourPart = parts.getByType("hour");
     if (!hourPart) {
       Logger.warn(
-        `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`
+        `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`,
       );
     } else {
-      const hourPartSetResult = DateHelper.#trySetDatePartFromPart(
-        value,
-        hourPart,
-        date,
-        options
-      );
+      const hourPartSetResult = DateHelper.#trySetDatePartFromPart(value, hourPart, date, options);
       if (!hourPartSetResult.success) {
         Logger.warn(
-          `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`
+          `Did not set the hour portion of the date in "${value}", keeping as ${date.getHours()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the hour ${hourPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the hour ${hourPartSetResult.value}`);
       }
     }
     const minutePart = parts.getByType("minute");
     if (!minutePart) {
       Logger.warn(
-        `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`
+        `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`,
       );
     } else {
       const minutePartSetResult = DateHelper.#trySetDatePartFromPart(
         value,
         minutePart,
         date,
-        options
+        options,
       );
       if (!minutePartSetResult.success) {
         Logger.warn(
-          `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`
+          `Did not set the minute portion of the date in "${value}", keeping as ${date.getMinutes()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the minute ${minutePartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the minute ${minutePartSetResult.value}`);
       }
     }
     const secondPart = parts.getByType("second");
     if (!secondPart) {
       Logger.warn(
-        `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`
+        `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`,
       );
     } else {
       const secondPartSetResult = DateHelper.#trySetDatePartFromPart(
         value,
         secondPart,
         date,
-        options
+        options,
       );
       if (!secondPartSetResult.success) {
         Logger.warn(
-          `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`
+          `Did not set the second portion of the date in "${value}", keeping as ${date.getSeconds()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the second ${secondPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the second ${secondPartSetResult.value}`);
       }
     }
     const millisecondPart = parts.getByType("fractionalSecondDigits");
     if (!millisecondPart) {
       Logger.warn(
-        `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`
+        `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`,
       );
     } else {
       const millisecondPartSetResult = DateHelper.#trySetDatePartFromPart(
         value,
         millisecondPart,
         date,
-        options
+        options,
       );
       if (!millisecondPartSetResult.success) {
         Logger.warn(
-          `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`
+          `Did not set the millisecond portion of the date in "${value}", keeping as ${date.getMilliseconds()}...`,
         );
       } else {
-        Logger.log(
-          `Parsed "${value}" to get the millisecond ${millisecondPartSetResult.value}`
-        );
+        Logger.log(`Parsed "${value}" to get the millisecond ${millisecondPartSetResult.value}`);
       }
     }
     return date;
@@ -3791,23 +3614,21 @@ export default class DateHelper {
       }
       const date = DateHelper.#getDateFromParts(value, formatParts, options);
       if (date instanceof Date && !isNaN(date.valueOf())) {
-        console.log(
-          `parsing "${value}" using "${formatUsed}", got "${date.toISOString()}"`
-        );
+        console.log(`parsing "${value}" using "${formatUsed}", got "${date.toISOString()}"`);
         const attempt = formatAttempts.find((f) => f.format === formatUsed);
         if (attempt) {
           attempt.success = true;
           result = new Date(date.valueOf());
         } else {
           throw new Error(
-            `Something went very wrong; Could not find format "${formatUsed}" in the list of possible formats.`
+            `Something went very wrong; Could not find format "${formatUsed}" in the list of possible formats.`,
           );
         }
         break;
       }
 
       Logger.warn(
-        `The value, "${value}", when reformatted using the same options, "${reformatted}", turned out different. Trying a different format...`
+        `The value, "${value}", when reformatted using the same options, "${reformatted}", turned out different. Trying a different format...`,
       );
       continue;
     }
@@ -3824,7 +3645,7 @@ export default class DateHelper {
    * Gets the default format string for the current locale
    */
   getDefaultFormat() {
-    return DateHelper.getDefaultFormatForLocale(this.locales);
+    return DateHelper.getDefaultFormatForLocale(this.locales?.[0] ?? "en-US", "short");
   }
   /**
    * Formats a date using the properties of the current instance.
@@ -3836,9 +3657,9 @@ export default class DateHelper {
   formatDate(date, options) {
     let { locale, format, timeZone } = DateHelper.validateOptions(options);
     return DateHelper.formatDate(date, {
-      locale: locale ?? this.locales,
-      format: format ?? this.formats,
-      timeZone: timeZone ?? this.timeZone,
+      locale: locale ?? this.locales ?? [],
+      format: format ?? this.formats ?? [],
+      timeZone: timeZone ?? this.timeZone ?? undefined,
     });
   }
   /**
@@ -3851,9 +3672,9 @@ export default class DateHelper {
   parseDate(value, options) {
     let { locale, format, timeZone } = DateHelper.validateOptions(options);
     return DateHelper.parseDate(value, {
-      locale: locale ?? this.locales,
-      format: format ?? this.formats,
-      timeZone: timeZone ?? this.timeZone,
+      locale: locale ?? this.locales ?? [],
+      format: format ?? this.formats ?? [],
+      timeZone: timeZone ?? this.timeZone ?? undefined,
     });
   }
 }

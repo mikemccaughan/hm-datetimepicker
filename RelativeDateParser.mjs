@@ -11,7 +11,7 @@ export default class RelativeDateParser {
     return (
       value != null &&
       value.length !== 0 &&
-      (['yesterday', 'today', 'tomorrow'].includes(value.toLowerCase()) ||
+      (["yesterday", "today", "tomorrow"].includes(value.toLowerCase()) ||
         /^([+-]*)(\d+)([yqmwdhnsl]?$)/.test(value))
     );
   }
@@ -24,39 +24,33 @@ export default class RelativeDateParser {
    * if the unit is incorrect, one of the key words is misspelled (e.g., "tomorow" or "yest")
    */
   static parse(value, relativeTo = new Date(), useUTC = false) {
-    if (typeof relativeTo === 'boolean') {
+    if (typeof relativeTo === "boolean") {
       useUTC = relativeTo;
       relativeTo = new Date();
     }
     var now = relativeTo != null ? new Date(relativeTo) : new Date();
     value = value.trim().toLowerCase();
-    if (value === 'yesterday') {
+    if (value === "yesterday") {
       now.setDate(now.getDate() - 1);
       return new Date(now.valueOf());
     }
-    if (value === 'today') {
+    if (value === "today") {
       return new Date(now.valueOf());
     }
-    if (value === 'tomorrow') {
+    if (value === "tomorrow") {
       now.setDate(now.getDate() + 1);
       return new Date(now.valueOf());
     }
     // if it doesn't start with +, -, or a digit, return invalid date
-    if (
-      !value.startsWith('+') &&
-      !value.startsWith('-') &&
-      !/^\d/.test(value)
-    ) {
-      return new Date('Invalid Date');
+    if (!value.startsWith("+") && !value.startsWith("-") && !/^\d/.test(value)) {
+      return new Date("Invalid Date");
     }
     // if it doesn't end with a unit identifier or a digit, return invalid date
     if (
-      !['y', 'q', 'm', 'w', 'd', 'h', 'n', 's', 'l'].some((ending) =>
-        value.endsWith(ending)
-      ) &&
+      !["y", "q", "m", "w", "d", "h", "n", "s", "l"].some((ending) => value.endsWith(ending)) &&
       !/\d$/.test(value)
     ) {
-      return new Date('Invalid Date');
+      return new Date("Invalid Date");
     }
     // Get the first character and the last character
     const avalue = [...value];
@@ -74,65 +68,65 @@ export default class RelativeDateParser {
     }
 
     if (!hasUnit) {
-      return new Date('Invalid Date');
+      return new Date("Invalid Date");
     }
 
-    value = parseInt(avalue.join(''));
-    if (hasSign && start === '-') {
+    value = parseInt(avalue.join(""));
+    if (hasSign && start === "-") {
       value = -value;
     }
     var getter = null;
     var setter = null;
     switch (end) {
-      case 'y':
+      case "y":
         getter = (useUTC ? now.getUTCFullYear : now.getFullYear).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCFullYear(old + value)
           : (old, value) => now.setFullYear(old + value);
         break;
-      case 'q':
+      case "q":
         getter = (useUTC ? now.getUTCMonth : now.getMonth).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCMonth(old + value * 3)
           : (old, value) => now.setMonth(old + value * 3);
         break;
-      case 'm':
+      case "m":
         getter = (useUTC ? now.getUTCMonth : now.getMonth).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCMonth(old + value)
           : (old, value) => now.setMonth(old + value);
         break;
-      case 'w':
+      case "w":
         getter = (useUTC ? now.getUTCDate : now.getDate).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCDate(old + value * 7)
           : (old, value) => now.setDate(old + value * 7);
         break;
-      case 'h':
+      case "h":
         getter = (useUTC ? now.getUTCHours : now.getHours).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCHours(old + value)
           : (old, value) => now.setHours(old + value);
         break;
-      case 'n':
+      case "n":
         getter = (useUTC ? now.getUTCMinutes : now.getMinutes).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCMinutes(old + value)
           : (old, value) => now.setMinutes(old + value);
         break;
-      case 's':
+      case "s":
         getter = (useUTC ? now.getUTCSeconds : now.getSeconds).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCSeconds(old + value)
           : (old, value) => now.setSeconds(old + value);
         break;
-      case 'l':
+      case "l":
         getter = (useUTC ? now.getUTCMilliseconds : now.getMilliseconds).bind(now);
         setter = useUTC
           ? (old, value) => now.setUTCMilliseconds(old + value)
           : (old, value) => now.setMilliseconds(old + value);
         break;
-      case 'd':
+      case "d":
       default:
         getter = (useUTC ? now.getUTCDate : now.getDate).bind(now);
         setter = useUTC

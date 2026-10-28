@@ -49,10 +49,7 @@ function parseFormatToParts(format, options) {
     if (!part.isStyle) {
       part.field = f;
       part.index = formatted.indexOf(f);
-      part.length = Math.max(
-        f.length,
-        part[part.type]?.toString().includes("2") ? 2 : 0
-      );
+      part.length = Math.max(f.length, part[part.type]?.toString().includes("2") ? 2 : 0);
       result.add(part, i === z - 1);
       formatted = formatted.replace(f, "_".repeat(f.length));
     } else if (f === "iso") {
@@ -112,15 +109,18 @@ function parseFormatToParts(format, options) {
       // TODO: Figure out what to do with format styles (e.g., dateStyle: "long")
       delete part.isStyle;
       const formatOptions = DateTimeFormattingOptions.fromDatePart(part);
-      const parts = new Intl.DateTimeFormat(options.locales, formatOptions.toDateTimeFormatOptions()).formatToParts().map((p) => new DatePart(p));
+      const parts = new Intl.DateTimeFormat(
+        options.locales,
+        formatOptions.toDateTimeFormatOptions(),
+      )
+        .formatToParts()
+        .map((p) => new DatePart(p));
       result.addRange(parts, i === z - 1);
     }
   }
 
   const literalsPass0 = [...formatted];
-  const literalsPass1 = literalsPass0.map((char, index) =>
-    char === "_" ? null : [index, char]
-  );
+  const literalsPass1 = literalsPass0.map((char, index) => (char === "_" ? null : [index, char]));
   const literalsPass2 = literalsPass1.filter((item) => item != null);
   const literalsPass3 = literalsPass2.reduce(
     (agg, [index, value], idx, arr) => [
@@ -128,13 +128,12 @@ function parseFormatToParts(format, options) {
       arr[idx - 1]?.[0] === index - 1
         ? [index, `${arr[idx - 1][1]}${value}`]
         : arr[idx + 1]?.[0] === index + 1
-        ? undefined
-        : !(arr[idx - 1]?.[0] === index - 1) &&
-          !(arr[idx + 1]?.[0] === index + 1)
-        ? [index, value]
-        : undefined,
+          ? undefined
+          : !(arr[idx - 1]?.[0] === index - 1) && !(arr[idx + 1]?.[0] === index + 1)
+            ? [index, value]
+            : undefined,
     ],
-    []
+    [],
   );
   const literalsPass4 = literalsPass3.filter((f) => f !== undefined);
   const literalsPass5 = literalsPass4.map(([index, value], idx) => ({
@@ -146,9 +145,7 @@ function parseFormatToParts(format, options) {
 
   const literals = literalsPass5.map((literal) => new DatePart(literal));
 
-  return new DatePartCollection(
-    [...result, ...literals].sort((a, b) => a.index - b.index)
-  );
+  return new DatePartCollection([...result, ...literals].sort((a, b) => a.index - b.index));
 }
 /**
  * Formats the part of the date specified
@@ -174,10 +171,7 @@ function formatDatePart(date, part, options) {
   let value = null;
   // v8 and others require the entire time to be formatted to override individual
   // elements of the time, so this code fills in the higher units of time.
-  if (
-    partOptions.hasOwnProperty("minute") &&
-    !partOptions.hasOwnProperty("hour")
-  ) {
+  if (partOptions.hasOwnProperty("minute") && !partOptions.hasOwnProperty("hour")) {
     partOptions.hour = partOptions.minute;
     partOptions.hour12 = partOptions.hour !== "2-digit";
   }
@@ -208,8 +202,7 @@ function formatDatePart(date, part, options) {
   }
   const formatter = new Intl.DateTimeFormat(locale, dateTimeFormatOption);
   const formattedParts = formatter.formatToParts(date);
-  const partType =
-    partOptions.type === "millisecond" ? "fractionalSecond" : partOptions.type;
+  const partType = partOptions.type === "millisecond" ? "fractionalSecond" : partOptions.type;
   let optionName = partType;
   let option = partOptions[optionName];
   const resolvedOptions = formatter.resolvedOptions();
@@ -297,9 +290,7 @@ export default function format(value, options) {
       Logger.warn(
         `Unable to format part "${
           part.name
-        }" for date "${date.toISOString()}" using options "${JSON.stringify(
-          options
-        )}".`
+        }" for date "${date.toISOString()}" using options "${JSON.stringify(options)}".`,
       );
     }
   }

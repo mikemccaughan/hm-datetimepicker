@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Sets the portion of the date associated with a particular DatePart to the given value
  * @callback DatePart~setter
@@ -23,8 +24,9 @@ import DateTimeFormattingOptions from "./DateTimeFormattingOptions.mjs";
 
 /**
  * A specific part of a date. See #validTypes for a list of parts.
+ * @extends {Record<string, unknown>}
  */
-export default class DatePart {
+class DatePart/* extends Record<string, unknown> */ {
   /**
    * @type {string|undefined}
    */
@@ -73,13 +75,7 @@ export default class DatePart {
    * @param {number|undefined} length The length of the DatePart
    * @param {DatePartSetter|undefined} setter The function which sets the DatePart in the date
    */
-  constructor(
-    type,
-    value = undefined,
-    index = undefined,
-    length = undefined,
-    setter = undefined
-  ) {
+  constructor(type, value, index, length, setter) {
     if (typeof setter === "function") {
       this.setter = setter;
     }
@@ -105,8 +101,7 @@ export default class DatePart {
       this.dayPeriod = type.dayPeriod;
       this.era = type.era;
       this.formatMatcher = type.formatMatcher ?? "best fit";
-      this.fractionalSecondDigits =
-        type.fractionalSecondDigits ?? type.millisecond;
+      this.fractionalSecondDigits = type.fractionalSecondDigits ?? type.millisecond;
       this.hour = type.hour;
       this.hour12 = type.hour12 ?? type.name?.startsWith("hour-h1");
       this.hourCycle = type.hourCycle;
@@ -134,7 +129,7 @@ export default class DatePart {
    */
   static buildFromFormattedPart(part) {
     const returnValue = new DatePart(part);
-    returnValue.length ??= part.value?.toString()?.length
+    returnValue.length ??= part.value?.toString()?.length;
     if (!part[part.type]) {
       switch (part.type) {
         case "era":
@@ -281,7 +276,7 @@ export default class DatePart {
    * @type {number} end The read-only index of the end of the date part in the string value
    */
   get end() {
-    return this.index + this.length;
+    return (this.index ?? 0) + (this.length ?? 0);
   }
 
   /**
@@ -301,6 +296,7 @@ export default class DatePart {
 
   /**
    * An array of the valid values for the type property.
+   * @type {string[]}
    */
   #validTypes = [
     "literal",
@@ -333,12 +329,7 @@ export default class DatePart {
    * @returns {DatePartType|undefined} The value, converted to a DatePartType or undefined;
    */
   getValidType(value) {
-    return (
-      (typeof value === "string" &&
-        this.#validTypes.includes(value) &&
-        value) ||
-      undefined
-    );
+    return (typeof value === "string" && this.#validTypes.includes(value)) ? value : undefined;
   }
 
   /**
@@ -477,7 +468,7 @@ export default class DatePart {
   localeMatcher = "best fit";
   /**
    * The time zone in which to format or parse date time values.
-   * @type {"UTC"|string|undefined}
+   * @type {string|undefined}
    */
   timeZone = "UTC";
   /**
@@ -549,12 +540,13 @@ export default class DatePart {
   /**
    * Provides a method for sorting DatePart objects.
    * @param {DatePart|undefined} a The first DatePart
-   * @param {DatePart|undefined} b The first DatePart
+   * @param {DatePart|undefined} b The second DatePart
    */
   static sortMe(a, b) {
-    return (a.index ?? 0) - (b.index ?? 0);
+    return (a?.index ?? 0) - (b?.index ?? 0);
   }
 }
+export default DatePart;
 
 /**
  * Provides a structured collection of DatePart objects so that adding, removing, and moving
@@ -571,17 +563,13 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
     if (!parts || [...parts].length === 0) {
       super();
     } else {
-      parts.sort(DatePart.sortMe);
+      parts.sort((a, b) => DatePart.sortMe(a, b));
       const values = Array.from(parts).map((part, idx, arr) => {
         let newPart = new DatePart(part);
         if (!("index" in part)) {
           if (idx === 0) {
             newPart.index = 0;
-          } else if (
-            arr
-              .slice(0, idx - 1)
-              .every((p) => p.index != null && p.length != null)
-          ) {
+          } else if (arr.slice(0, idx - 1).every((p) => p.index != null && p.length != null)) {
             newPart.index = arr
               .slice(0, idx - 1)
               .reduce((agg, cur) => agg + cur.index + cur.length, 1);
@@ -596,9 +584,9 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
         ) {
           newPart = DatePart.buildFromFormattedPart(newPart);
         }
-        return newPart /* as DatePart*/;
+        return newPart; /* as DatePart*/
       });
-      values.sort(DatePart.sortMe);
+      values.sort((a, b) => DatePart.sortMe(a, b));
       super(values);
     }
   }
@@ -618,9 +606,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
           part.length = null;
         }
       }
-      const partsAfter = values
-        .filter((p) => p.index > part.index)
-        .sort(DatePart.sortMe);
+      const partsAfter = values.filter((p) => p.index > part.index).sort((a, b) => DatePart.sortMe(a, b));
       const partAt = values.findIndex((p) => p.index === part.index);
       if (partAt > -1 && "length" in part && part.length != null) {
         values.at(partAt).index = part.end;
@@ -645,7 +631,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
                   length: cur.length,
                 }
               : agg,
-          { idx: 0, index: 0, length: 0 }
+          { idx: 0, index: 0, length: 0 },
         );
       }
       part.index = lastIndex.index + lastIndex.length;
@@ -690,9 +676,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
     if (part.onLengthChanged) {
       part.onLengthChanged = null;
     }
-    const index = values.findIndex(
-      (p) => p.index === part.index && p.type === part.type
-    );
+    const index = values.findIndex((p) => p.index === part.index && p.type === part.type);
     if (index > -1) {
       values.splice(index, 1);
     }
@@ -732,7 +716,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
    * @returns {this} The current collection.
    */
   sortAndReplace(values) {
-    values = values.sort(DatePart.sortMe);
+    values = values.sort((a, b) => DatePart.sortMe(a, b));
     super.clear();
     for (const value of values) {
       super.add(value);
@@ -744,9 +728,9 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
    * @param {DatePart[]|undefined} values The array of DateParts that make up the collection. If undefined or not provided, uses the current values.
    * @returns {this} The current collection, with the values sorted by index and all of the indexes updated to be contiguous.
    */
-  reindex(values = undefined) {
+  reindex(values) {
     values = values ?? [...this];
-    values = values.sort(DatePart.sortMe);
+    values = values.sort((a, b) => DatePart.sortMe(a, b));
     let index = 0;
     let lastIndex = -1;
     let lastLength = -1;
@@ -754,13 +738,13 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
       if (index === 0) {
         if (part.index !== 0) {
           console.warn(
-            `The first part by index does not have an index of 0, which is odd, so we're setting it now!`
+            `The first part by index does not have an index of 0, which is odd, so we're setting it now!`,
           );
           part.index = 0;
         }
       } else if (part.index !== lastIndex + lastLength) {
         console.warn(
-          `This part's index (${part.index}) is not equal to the last part's index (${lastIndex}) plus its length (${lastLength})... Setting it now!`
+          `This part's index (${part.index}) is not equal to the last part's index (${lastIndex}) plus its length (${lastLength})... Setting it now!`,
         );
         part.index = lastIndex + lastLength;
       }
@@ -783,9 +767,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
    * @returns The first DatePart with the given type in the collection.
    */
   getByType(type, startAt = 0) {
-    return [...this]
-      .sort(DatePart.sortMe)
-      .find((p, i) => i >= startAt && p.type === type);
+    return [...this].sort((a, b) => DatePart.sortMe(a, b)).find((p, i) => i >= startAt && p.type === type);
   }
   /**
    * Determines whether the collection contains a DatePart of the given type.
@@ -803,7 +785,7 @@ export class DatePartCollection extends Set /*<DatePart>*/ {
     return super.values();
   }
   /**
-   * 
+   *
    * @returns {DateTimeFormattingOptions} The current DatePart data, expressed as a single set of expressions,
    * suitable for passing to DateHelper
    */
