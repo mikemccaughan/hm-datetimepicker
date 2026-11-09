@@ -2,14 +2,31 @@
   "name": "hm-datetimepicker",
   "version": "1.0.0",
   "description": "",
-  "main": "serve.mjs",
+  "license": "ISC",
+  "author": "Mike McCaughan",
   "directories": {
     "test": "tests"
   },
+  "main": "serve.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "serve": "node ./serve.mjs"
+    "test": "node --test",
+    "serve": "node ./serve.mjs",
+    "update:yarn": "yarn set version latest",
+    "update:dependencies": "yarn dlx npm-check-updates -u && yarn install",
+    "update:browserslist": "yarn dlx -p browserslist -p update-browserslist-db update-browserslist-db",
+    "update": "yarn run update:yarn && yarn run update:browserslist && yarn run update:dependencies",
+    "build": "yarn run build:predeploy",
+    "build:predeploy:fs": "rm -r ./dist/ && mkdir ./dist/ && cd ./dist && mkdir ./fn-date-time && cd ../..",
+    "build:predeploy": "yarn run update && yarn run build:predeploy:fs",
+    "build:deploy:copy": "cp -r *.html ./dist/ && cp -r *.js ./dist/ && cp -r *.css ./dist/ && cp -r *.json ./dist/ && cp -r *.mjs ./dist/ && cp -r README.md ./dist/ && cp -r Web.config ./dist/ && rm dist/package*.json && cp -r ./fn-date-time/ ./dist/fn-date-time/ && rm -r ../publish/hm-datetimepicker/ && cp -r ./dist/ ../publish/hm-datetimepicker/",
+    "build:deploy": "yarn run build:predeploy && yarn run build:deploy:copy"
   },
-  "author": "",
-  "license": "ISC"
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.22.1",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "yarn@4.18.1"
 }

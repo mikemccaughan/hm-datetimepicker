@@ -1,4 +1,4 @@
-import { TimeSpan } from './TimeSpan.mjs';
+import { TimeSpan } from "./TimeSpan.mjs";
 /**
  * Provides an enumeration of the types of cache expiration.
  */
@@ -30,7 +30,9 @@ export class CacheExpiration {
     this.isRunning = true;
     this.beganAt = new Date();
     // default 1 hour expiration
-    this.expiresAt = new Date(new Date(this.beganAt.valueOf()).setHours(this.beganAt.getHours() + 1));
+    this.expiresAt = new Date(
+      new Date(this.beganAt.valueOf()).setHours(this.beganAt.getHours() + 1),
+    );
     if (this.type === CacheExpirationType.Absolute) {
       // If the expiration is absolute, then the time of expiration is the specified time.
       if (this.expiration && this.expiration.valueOf() > 0) {
@@ -44,7 +46,10 @@ export class CacheExpiration {
       }
     }
     this.elapsed = TimeSpan.fromSubtractingTwoDates(this.beganAt, this.expiresAt);
-    this.expirationCheck = setTimeout(this.checkExpiration.bind(this), this.expiresAt.valueOf() - this.beganAt.valueOf());
+    this.expirationCheck = setTimeout(
+      this.checkExpiration.bind(this),
+      this.expiresAt.valueOf() - this.beganAt.valueOf(),
+    );
   }
   /**
    * Resets the expiration process if the expiration type is sliding.
@@ -60,7 +65,10 @@ export class CacheExpiration {
    */
   checkExpiration() {
     if (this.expiresAt instanceof Date && !Number.isNaN(this.expiresAt.valueOf())) {
-      if (TimeSpan.fromSubtractingTwoDates(this.beganAt, Date.now()).totalMilliseconds >= this.elapsed.totalMilliseconds) {
+      if (
+        TimeSpan.fromSubtractingTwoDates(this.beganAt, Date.now()).totalMilliseconds >=
+        this.elapsed.totalMilliseconds
+      ) {
         this.stop();
         this.onExpired();
       }
@@ -73,24 +81,30 @@ export class CacheExpiration {
  */
 export class Cache {
   #onExpired;
+  #entries;
   /**
    * Causes cache entries to never expire.
    */
   static InfiniteAbsoluteExpiration = new CacheExpiration(
     CacheExpirationType.Absolute,
-    new Date(0)
+    new Date(0),
   );
   /**
    * Causes cache entries to never expire, on a sliding expiration basis.
    */
-  static NoSlidingExpiration = new CacheExpiration(
-    CacheExpirationType.Sliding,
-    TimeSpan.Zero
-  );
+  static NoSlidingExpiration = new CacheExpiration(CacheExpirationType.Sliding, TimeSpan.Zero);
+  /**
+   * Initializes a new instance of the Cache class with the specified expiration policy.
+   * @param {CacheExpiration} expiration The expiration rule to use for items in this Cache.
+   * @param {Function} onExpiration The function to call when a cache entry expires.
+   */
   constructor(expiration, onExpiration) {
     this.expiration = expiration;
     this.#entries = new Map();
-    this.#onExpired = this.expiration.onExpired = onExpiration;
+    0;
+    if (typeof onExpiration === "function") {
+      this.#onExpired = this.expiration.onExpired = onExpiration;
+    }
   }
   /**
    * Provides access to the onExpired callback function.
@@ -98,7 +112,7 @@ export class Cache {
   get onExpired() {
     return this.#onExpired;
   }
-  set onExpired(valued) {
+  set onExpired(value) {
     if (this.#onExpired !== value) {
       this.#onExpired = value;
       this.expiration.onExpired = value;
@@ -106,16 +120,16 @@ export class Cache {
   }
   /**
    * Provides access to cached values.
-   * @param {any} key The key with which to look up the cached value.
-   * @returns The value cached under the specified key.
+   * @param {string | number} key The key with which to look up the cached value.
+   * @returns {unknown} The value cached under the specified key.
    */
   get(key) {
     return this.#entries.get(key);
   }
   /**
    * Adds/Updates a cached value.
-   * @param {any} key The under which to store the specified value.
-   * @param {any} value The value to store under the specified key.
+   * @param {string | number} key The key under which to store the specified value.
+   * @param {unknown} value The value to store under the specified key.
    * @returns The Cache instance.
    */
   set(key, value) {
@@ -125,7 +139,7 @@ export class Cache {
   }
   /**
    * Deletes a value from the cache.
-   * @param {any} key The key of the value to delete from the cache.
+   * @param {string | number} key The key of the value to delete from the cache.
    * @returns true if a value in the Cache object existed and has been removed, or false if the value does not exist.
    */
   delete(key) {
@@ -145,22 +159,38 @@ export class Cache {
  * Manages the creation of Caches in an application.
  */
 export default class CacheManager {
-  static #token = Symbol('ctor');
+  static #token = Symbol("ctor");
   static instance;
   static lastId = -1;
   static caches;
+  /**
+   * Creates an instance of the `CacheManager` class whose items never expire.
+   * @returns An instance of the `CacheManager` class whose items never expire.
+   */
   static Create() {
     caches = new Map();
     return instance ?? (instance = new CacheManager(CacheManager.#token));
   }
+  /**
+   * Initializes a new instance of the `CacheManager` class. DO NOT CALL THIS CONSTRUCTOR DIRECTLY. Use `CacheManager.Create()` instead.
+   * @private
+   * @param {Symbol} token A Symbol which controls the uniqueness of CacheManager instances.
+   */
   constructor(token) {
     if (token !== CacheManager.#token) {
-      throw new Error('Use Create() to get an instance of CacheManager');
+      throw new Error("Use Create() to get an instance of CacheManager");
     }
   }
+  /**
+   * Creates a new cache instance with the specified expiration policy.
+   * @param {CacheExpiration} expiration The expiration rule to use for items in this Cache.
+   * @returns {Cache} An instance of the `Cache` class.
+   */
   static CreateCache(expiration) {
     const id = CacheManager.lastId++;
-    const cache = new Cache(expiration, () => { CacheManager.caches.delete(id); });
+    const cache = new Cache(expiration, () => {
+      CacheManager.caches.delete(id);
+    });
     CacheManager.caches.set(id, cache);
     return cache;
   }

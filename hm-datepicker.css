@@ -147,11 +147,11 @@
 }
 
 .month-prev-utc::before {
-  content: '⮜';
+  content: "⮜";
 }
 
 .month-next-utc::before {
-  content: '⮞';
+  content: "⮞";
 }
 
 .calendar-entry-body {
@@ -181,40 +181,40 @@ button.month-entry-month:disabled {
   background: white;
   cursor: not-allowed;
 }
-button.calendar-entry-body-date[data-date-other='true'],
-button.year-entry-year[data-date-other='true'],
-button.month-entry-month[data-date-other='true'] {
+button.calendar-entry-body-date[data-date-other="true"],
+button.year-entry-year[data-date-other="true"],
+button.month-entry-month[data-date-other="true"] {
   background-color: rgba(0, 0, 0, 0.025);
   color: #595959;
   font-style: italic;
 }
-button.calendar-entry-body-date[data-date-other='true']:disabled,
-button.year-entry-year[data-date-other='true']:disabled,
-button.month-entry-month[data-date-other='true']:disabled {
+button.calendar-entry-body-date[data-date-other="true"]:disabled,
+button.year-entry-year[data-date-other="true"]:disabled,
+button.month-entry-month[data-date-other="true"]:disabled {
   background-color: rgba(0, 0, 0, 0.025);
   cursor: not-allowed;
 }
-button.calendar-entry-body-date[data-is-today='true'][data-date-other='false'],
-button.year-entry-year[data-is-today='true'][data-date-other='false'],
-button.month-entry-month[data-is-today='true'][data-date-other='false'] {
+button.calendar-entry-body-date[data-is-today="true"][data-date-other="false"],
+button.year-entry-year[data-is-today="true"][data-date-other="false"],
+button.month-entry-month[data-is-today="true"][data-date-other="false"] {
   background-color: lemonchiffon;
   color: #000000;
 }
-button.calendar-entry-body-date[data-is-today='true'][data-date-other='false']:disabled,
-button.year-entry-year[data-is-today='true'][data-date-other='false']:disabled,
-button.month-entry-month[data-is-today='true'][data-date-other='false']:disabled {
+button.calendar-entry-body-date[data-is-today="true"][data-date-other="false"]:disabled,
+button.year-entry-year[data-is-today="true"][data-date-other="false"]:disabled,
+button.month-entry-month[data-is-today="true"][data-date-other="false"]:disabled {
   background-color: white;
   color: #000000;
 }
-button.calendar-entry-body-date[data-is-selected='true'],
-button.year-entry-year[data-is-selected='true'],
-button.month-entry-month[data-is-selected='true'] {
+button.calendar-entry-body-date[data-is-selected="true"],
+button.year-entry-year[data-is-selected="true"],
+button.month-entry-month[data-is-selected="true"] {
   background-color: lightblue;
   color: #000000;
 }
-button.calendar-entry-body-date[data-is-selected='true'][data-date-other='false']:disabled,
-button.year-entry-year[data-is-selected='true'][data-date-other='false']:disabled,
-button.month-entry-month[data-is-selected='true'][data-date-other='false']:disabled {
+button.calendar-entry-body-date[data-is-selected="true"][data-date-other="false"]:disabled,
+button.year-entry-year[data-is-selected="true"][data-date-other="false"]:disabled,
+button.month-entry-month[data-is-selected="true"][data-date-other="false"]:disabled {
   background-color: lightpink;
   color: #000000;
 }

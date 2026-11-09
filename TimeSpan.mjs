@@ -2,21 +2,21 @@
  * Provides an easy API for dealing with spans of time.
  */
 export default class TimeSpan {
-  #isProcessing;
-  #totalDays;
-  #totalHours;
-  #totalMinutes;
-  #totalSeconds;
-  #totalMilliseconds;
-  #days;
-  #hours;
-  #minutes;
-  #seconds;
-  #milliseconds;
-  #ms;
-  static #zero;
-  static #minValue;
-  static #maxValue;
+  #isProcessing = false;
+  #totalDays = 0;
+  #totalHours = 0;
+  #totalMinutes = 0;
+  #totalSeconds = 0;
+  #totalMilliseconds = 0;
+  #days = 0;
+  #hours = 0;
+  #minutes = 0;
+  #seconds = 0;
+  #milliseconds = 0;
+  #ms = 0;
+  static #zero = new TimeSpan(0);
+  static #minValue = new TimeSpan(-8640000000000000);
+  static #maxValue = new TimeSpan(8640000000000000);
   /**
    * A TimeSpan representing no elapsed time.
    */
@@ -85,6 +85,7 @@ export default class TimeSpan {
   }
   /**
    * Initializes the TimeSpan instance with a specified number of days, hours, minutes, seconds, and milliseconds.
+   * Better to use the `from<Unit>` family of creator methods.
    * @param {number} days The total number of days represented in the TimeSpan
    * @param {number} hours The total number of hours represented in the TimeSpan
    * @param {number} minutes The total number of minutes represented in the TimeSpan
@@ -93,26 +94,46 @@ export default class TimeSpan {
    */
   /**
    * Initializes the TimeSpan instance with a specified number of hours, minutes, and seconds.
+   * Better to use the `from<Unit>` family of creator methods.
    * @param {number} hours The total number of hours represented in the TimeSpan
    * @param {number} minutes The total number of minutes represented in the TimeSpan
    * @param {number} seconds The total number of seconds represented in the TimeSpan
    */
   /**
    * Initializes the TimeSpan instance with a specified number of "ms" units.
+   * Better to use the `from<Unit>` family of creator methods.
    * @param {number} ms The total number of "ms" units represented in the TimeSpan
    */
-  constructor(msOrHigher, ...args) {
+  /**
+   * Initializes the TimeSpan class with the units desired.
+   * Better to use the `from<Unit>` family of creator methods.
+   * @param {number} spanOfMsOrHigher The number of milliseconds (or higher) to make the span
+   * @param {...any} args The units desired to initiate the TimeSppan with.
+   */
+  constructor(spanOfMsOrHigher = 0, ...args) {
     this.#isProcessing = true;
     if (args.length > 5) {
-      throw new Error('The TimeSpan constructor only takes 5 or fewer arguments');
+      throw new Error("The TimeSpan constructor only takes 5 or fewer arguments");
     } else if (args.length > 3) {
-      [this.#totalDays, this.#totalHours, this.#totalMinutes, this.#totalSeconds, this.#totalMilliseconds] = [msOrHigher, ...args];
+      [
+        this.#totalDays,
+        this.#totalHours,
+        this.#totalMinutes,
+        this.#totalSeconds,
+        this.#totalMilliseconds,
+      ] = [spanOfMsOrHigher, ...args];
     } else if (args.length <= 3 && args.length > 1) {
-      [this.#totalHours, this.#totalMinutes, this.#totalSeconds] = [msOrHigher, ...args];
+      [this.#totalHours, this.#totalMinutes, this.#totalSeconds] = [spanOfMsOrHigher, ...args];
     } else {
-      this.#ms = msOrHigher ?? 0;
+      this.#ms = spanOfMsOrHigher ?? 0;
     }
-    if (this.#totalDays != null || this.#totalHours != null || this.#totalMinutes != null || this.#totalSeconds != null || this.#totalMilliseconds != null) {
+    if (
+      this.#totalDays != null ||
+      this.#totalHours != null ||
+      this.#totalMinutes != null ||
+      this.#totalSeconds != null ||
+      this.#totalMilliseconds != null
+    ) {
       // Got more than one argument
       this.#totalMilliseconds =
         (this.#totalMilliseconds ?? 0) +
@@ -129,7 +150,7 @@ export default class TimeSpan {
    */
   process() {
     this.#isProcessing = true;
-    console.time('process');
+    console.time("process");
     this.#totalMilliseconds = this.#ms / TimeSpan.msPerMillisecond;
     this.#totalSeconds = this.#ms / TimeSpan.msPerSecond;
     this.#totalMinutes = this.#ms / TimeSpan.msPerMinute;
@@ -141,12 +162,15 @@ export default class TimeSpan {
     this.#hours = this.asDate.getUTCHours();
     let tempDate = new Date(this.asDate.valueOf());
     let days = 0;
-    while (tempDate.getUTCMonth() > 0 && tempDate.getUTCFullYear() === this.asDate.getUTCFullYear()) {
+    while (
+      tempDate.getUTCMonth() > 0 &&
+      tempDate.getUTCFullYear() === this.asDate.getUTCFullYear()
+    ) {
       days += tempDate.getUTCDate();
       tempDate.setUTCDate(0);
     }
     this.#days = days + this.asDate.getUTCDate() - 1;
-    console.timeEnd('process');
+    console.timeEnd("process");
     this.#isProcessing = false;
   }
   /**
@@ -155,8 +179,15 @@ export default class TimeSpan {
    * @returns {Date} The date value, with the amount of time represented by this TimeSpan added to it.
    */
   addToDate(date) {
-    if (date == null || typeof date !== 'object' || !(date instanceof Date) || Number.isNaN(date.valueOf())) {
-      throw new TypeError(`The date passed to addToDate must be a Date object; ${date} is not.`);
+    if (
+      date == null ||
+      typeof date !== "object" ||
+      !(date instanceof Date) ||
+      Number.isNaN(date.valueOf())
+    ) {
+      throw new TypeError(
+        `The date passed to addToDate must be a valid Date object; ${date} is not.`,
+      );
     }
     return new Date(date.valueOf() + this.totalMilliseconds);
   }
@@ -166,8 +197,15 @@ export default class TimeSpan {
    * @returns {Date} The date value, with the amount of time represented by this TimeSpan removed from it.
    */
   subtractFromDate(date) {
-    if (date == null || typeof date !== 'object' || !(date instanceof Date) || Number.isNaN(date.valueOf())) {
-      throw new TypeError(`The date passed to subtractFromDate must be a Date object; ${date} is not.`);
+    if (
+      date == null ||
+      typeof date !== "object" ||
+      !(date instanceof Date) ||
+      Number.isNaN(date.valueOf())
+    ) {
+      throw new TypeError(
+        `The date passed to subtractFromDate must be a Date object; ${date} is not.`,
+      );
     }
     return new Date(date.valueOf() - this.totalMilliseconds);
   }
@@ -208,35 +246,35 @@ export default class TimeSpan {
     return this.#totalMilliseconds;
   }
   /**
-   * Provides the number of days represented by this TimeSpan. Unless the TimeSpan represents 
+   * Provides the number of days represented by this TimeSpan. Unless the TimeSpan represents
    * exactly a whole number of days, likely needs to be combined with other properties.
    */
   get days() {
     return this.#days;
   }
   /**
-   * Provides the number of hours represented by this TimeSpan. Unless the TimeSpan represents 
+   * Provides the number of hours represented by this TimeSpan. Unless the TimeSpan represents
    * exactly a whole number of hours, likely needs to be combined with other properties.
    */
   get hours() {
     return this.#hours;
   }
   /**
-   * Provides the number of minutes represented by this TimeSpan. Unless the TimeSpan represents 
+   * Provides the number of minutes represented by this TimeSpan. Unless the TimeSpan represents
    * exactly a whole number of minutes, likely needs to be combined with other properties.
    */
   get minutes() {
     return this.#minutes;
   }
   /**
-   * Provides the number of seconds represented by this TimeSpan. Unless the TimeSpan represents 
+   * Provides the number of seconds represented by this TimeSpan. Unless the TimeSpan represents
    * exactly a whole number of seconds, likely needs to be combined with other properties.
    */
   get seconds() {
     return this.#seconds;
   }
   /**
-   * Provides the number of milliseconds represented by this TimeSpan. Unless the TimeSpan represents 
+   * Provides the number of milliseconds represented by this TimeSpan. Unless the TimeSpan represents
    * exactly a whole number of milliseconds, likely needs to be combined with other properties.
    */
   get milliseconds() {
@@ -248,7 +286,12 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the value of the Date object.
    */
   static fromDate(value) {
-    if (value == null || typeof value !== 'object' || !(value instanceof Date) || Number.isNaN(value.valueOf())) {
+    if (
+      value == null ||
+      typeof value !== "object" ||
+      !(value instanceof Date) ||
+      Number.isNaN(value.valueOf())
+    ) {
       throw new TypeError(`The value passed to fromDate must be a Date object; ${value} is not.`);
     }
     return new TimeSpan(value.valueOf() * TimeSpan.msPerMillisecond);
@@ -259,7 +302,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of days specified.
    */
   static fromDays(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value * TimeSpan.msPerDay);
@@ -270,7 +313,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of hours specified.
    */
   static fromHours(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value * TimeSpan.msPerHour);
@@ -281,7 +324,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of minutes specified.
    */
   static fromMinutes(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value * TimeSpan.msPerMinute);
@@ -292,7 +335,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of seconds specified.
    */
   static fromSeconds(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value * TimeSpan.msPerSecond);
@@ -303,7 +346,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of milliseconds specified.
    */
   static fromMilliseconds(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value * TimeSpan.msPerMillisecond);
@@ -314,7 +357,7 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of "ms" units specified.
    */
   static fromMs(value) {
-    if (value == null || typeof value !== 'number' || Number.isNaN(value)) {
+    if (value == null || typeof value !== "number" || Number.isNaN(value)) {
       throw new TypeError(`The value passed to fromDate must be a number value; ${value} is not.`);
     }
     return new TimeSpan(value);
@@ -326,11 +369,25 @@ export default class TimeSpan {
    * @returns The TimeSpan generated by the number of milliseconds between the two Date objects given.
    */
   static fromSubtractingTwoDates(earlierDate, laterDate) {
-    if (earlierDate == null || typeof earlierDate !== 'object' || !(earlierDate instanceof Date) || Number.isNaN(earlierDate.valueOf())) {
-      throw new TypeError(`The earlierDate passed to fromSubtractingTwoDates must be a Date object; ${earlierDate} is not.`);
+    if (
+      earlierDate == null ||
+      typeof earlierDate !== "object" ||
+      !(earlierDate instanceof Date) ||
+      Number.isNaN(earlierDate.valueOf())
+    ) {
+      throw new TypeError(
+        `The earlierDate passed to fromSubtractingTwoDates must be a Date object; ${earlierDate} is not.`,
+      );
     }
-    if (laterDate == null || typeof laterDate !== 'object' || !(laterDate instanceof Date) || Number.isNaN(laterDate.valueOf())) {
-      throw new TypeError(`The laterDate passed to fromSubtractingTwoDates must be a Date object; ${laterDate} is not.`);
+    if (
+      laterDate == null ||
+      typeof laterDate !== "object" ||
+      !(laterDate instanceof Date) ||
+      Number.isNaN(laterDate.valueOf())
+    ) {
+      throw new TypeError(
+        `The laterDate passed to fromSubtractingTwoDates must be a Date object; ${laterDate} is not.`,
+      );
     }
     return TimeSpan.fromMilliseconds(laterDate.valueOf() - earlierDate.valueOf());
   }
@@ -339,74 +396,80 @@ export default class TimeSpan {
    * @param {string} value The string value to parse. If null or undefined is given, it will be returned as is.
    * @param {string} format A format to use when parsing the TimeSpan. Value values are 'ISO' and 'Date' (or 'd'). If not present, 'ISO' is used.
    * @returns {TimeSpan} The TimeSpan parsed from the given string, or null or undefined.
-   * @remarks Note that specifying a "months" value greater than zero will result in 30 days being added per month specified. Specifying "years" 
+   * @remarks Note that specifying a "months" value greater than zero will result in 30 days being added per month specified. Specifying "years"
    * will result in 365 days per year specified added to the resulting TimeSpan.
    */
-  static fromString(value, format = 'ISO') {
+  static fromString(value, format = "ISO") {
     if (value == null) {
       return value;
     }
-    const isoRegExp = /^P((?<years>[\d\.\,]+)Y|.{0})((?<months>[\d\.\,]+)M|.{0})((?<weeks>[\d\.\,]+)W|.{0})((?<days>[\d\.\,]+)D|.{0})T?((?<hours>[\d\.\,]+)H|.{0})((?<minutes>[\d\.\,]+)M|.{0})((?<seconds>[\d\.\,]+)S|.{0})$/i;
-    const isoDateRegExp = /^(?<years>\d{4,}|.{0})\-?(?<months>\d{1,2}|.{0})\-?(?<days>\d{1,2}|.{0})(T|\s)?(?<hours>\d{1,2}|.{0}):?(?<minutes>\d{1,2}|.{0}):?(?<seconds>\d{1,2}\.?\d{0,3}|.{0})(Z|\+([\d:]+)|\-([\d:]+)|.+)$/i;
+    const isoRegExp =
+      /^P((?<years>[\d.,]+)Y|.{0})((?<months>[\d.,]+)M|.{0})((?<weeks>[\d.,]+)W|.{0})((?<days>[\d.,]+)D|.{0})T?((?<hours>[\d.,]+)H|.{0})((?<minutes>[\d.,]+)M|.{0})((?<seconds>[\d.,]+)S|.{0})$/i;
+    const isoDateRegExp =
+      /^(?<years>\d{4,}|.{0})-?(?<months>\d{1,2}|.{0})-?(?<days>\d{1,2}|.{0})(T|\s)?(?<hours>\d{1,2}|.{0}):?(?<minutes>\d{1,2}|.{0}):?(?<seconds>\d{1,2}\.?\d{0,3}|.{0})(Z|\+([\d:]+)|-([\d:]+)|.+)$/i;
     switch (format) {
-      case 'Date':
-      case 'DATE':
-      case 'date':
-      case 'd':
+      case "Date":
+      case "DATE":
+      case "date":
+      case "d":
+        /** @type {number} */
+        let ms = 0;
         if (isoDateRegExp.test(value)) {
           const matches = isoRegExp.exec(value);
-          const years = matches.groups?.years ?? 0;
-          const months = matches.groups?.months ?? 0;
-          const weeks = matches.groups?.weeks ?? 0;
-          const days = matches.groups?.days ?? 0;
-          const hours = matches.groups?.hours ?? 0;
-          const minutes = matches.groups?.minutes ?? 0;
-          const seconds = matches.groups?.seconds ?? 0;
-          let ms = seconds * TimeSpan.msPerSecond;
-          ms += minutes * TimeSpan.msPerMinute;
-          ms += hours * TimeSpan.msPerHour;
-          ms += days * TimeSpan.msPerDay;
-          ms += weeks * (7 * days * TimeSpan.msPerDay);
-          if (months > 0) {
+          const years = matches?.groups?.years ?? 0;
+          const months = matches?.groups?.months ?? 0;
+          const weeks = matches?.groups?.weeks ?? 0;
+          const days = matches?.groups?.days ?? 0;
+          const hours = matches?.groups?.hours ?? 0;
+          const minutes = matches?.groups?.minutes ?? 0;
+          const seconds = matches?.groups?.seconds ?? 0;
+          ms += +seconds * TimeSpan.msPerSecond;
+          ms += +minutes * TimeSpan.msPerMinute;
+          ms += +hours * TimeSpan.msPerHour;
+          ms += +days * TimeSpan.msPerDay;
+          ms += +weeks * (7 * +days * TimeSpan.msPerDay);
+          if (+months > 0) {
             console.warn('Ambiguous term "month" was used in the string, 30 days will be used.');
-            ms += months * (30 * days * TimeSpan.msPerDay);
+            ms += +months * (30 * +days * TimeSpan.msPerDay);
           }
-          if (years > 0) {
+          if (+years > 0) {
             console.warn('Ambiguous term "year" was used in the string, 365 days will be used.');
-            ms += years * (365 * days * TimeSpan.msPerDay);
+            ms += +years * (365 * +days * TimeSpan.msPerDay);
           }
         } else {
           const error = `Unable to parse "${value}" as a valid ISO 8601 Date format.`;
           console.error(error);
           throw new Error(error);
         }
-        return new TimeSpan(ms);
+        return TimeSpan.fromMilliseconds(ms);
       case undefined:
       case null:
-      case '':
-      case 'ISO':
+      case "":
+      case "ISO":
       default:
+        /** @type {number} */
+        ms = 0;
         if (isoRegExp.test(value)) {
           const matches = isoRegExp.exec(value);
-          const years = matches.groups?.years ?? 0;
-          const months = matches.groups?.months ?? 0;
-          const weeks = matches.groups?.weeks ?? 0;
-          const days = matches.groups?.days ?? 0;
-          const hours = matches.groups?.hours ?? 0;
-          const minutes = matches.groups?.minutes ?? 0;
-          const seconds = matches.groups?.seconds ?? 0;
-          let ms = seconds * TimeSpan.msPerSecond;
-          ms += minutes * TimeSpan.msPerMinute;
-          ms += hours * TimeSpan.msPerHour;
-          ms += days * TimeSpan.msPerDay;
-          ms += weeks * (7 * days * TimeSpan.msPerDay);
-          if (months > 0) {
+          const years = matches?.groups?.years ?? 0;
+          const months = matches?.groups?.months ?? 0;
+          const weeks = matches?.groups?.weeks ?? 0;
+          const days = matches?.groups?.days ?? 0;
+          const hours = matches?.groups?.hours ?? 0;
+          const minutes = matches?.groups?.minutes ?? 0;
+          const seconds = matches?.groups?.seconds ?? 0;
+          ms += +seconds * TimeSpan.msPerSecond;
+          ms += +minutes * TimeSpan.msPerMinute;
+          ms += +hours * TimeSpan.msPerHour;
+          ms += +days * TimeSpan.msPerDay;
+          ms += +weeks * (7 * +days * TimeSpan.msPerDay);
+          if (+months > 0) {
             console.warn('Ambiguous term "month" was used in the string, 30 days will be used.');
-            ms += months * (30 * days * TimeSpan.msPerDay);
+            ms += +months * (30 * +days * TimeSpan.msPerDay);
           }
-          if (years > 0) {
+          if (+years > 0) {
             console.warn('Ambiguous term "year" was used in the string, 365 days will be used.');
-            ms += years * (365 * days * TimeSpan.msPerDay);
+            ms += +years * (365 * +days * TimeSpan.msPerDay);
           }
         } else {
           const error = `Unable to parse "${value}" as a valid ISO 8601 Duration format.`;
@@ -425,7 +488,8 @@ export default class TimeSpan {
       days: this.days,
       hours: this.hours,
       minutes: this.minutes,
-      seconds: this.seconds + (this.milliseconds * TimeSpan.msPerMillisecond / TimeSpan.msPerSecond)
+      seconds:
+        (this.seconds + this.milliseconds * TimeSpan.msPerMillisecond) / TimeSpan.msPerSecond,
     });
   }
   /**
@@ -433,6 +497,6 @@ export default class TimeSpan {
    * @returns The value of the TimeSpan formatted as a Date in ISO format.
    */
   toString() {
-    return `P${this.days}DT${this.hours}H${this.minutes}M${this.seconds + (this.milliseconds * TimeSpan.msPerMillisecond / TimeSpan.msPerSecond)}S`
+    return `P${this.days}DT${this.hours}H${this.minutes}M${(this.seconds + this.milliseconds * TimeSpan.msPerMillisecond) / TimeSpan.msPerSecond}S`;
   }
 }
